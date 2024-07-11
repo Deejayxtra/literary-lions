@@ -41,3 +41,5 @@ CREATE TABLE IF NOT EXISTS likes (
     FOREIGN KEY (comment_id) REFERENCES comments(id),
     UNIQUE (user_id, post_id, comment_id)
 );
+
+
