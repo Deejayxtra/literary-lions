@@ -16,19 +16,24 @@ func main() {
 		log.Fatalf("Could not initialize database: %v", err)
 	}
 
-	handlers.InitHandlers(database)
+	handlers.InitHandlers(database) // Pass the database instance to handlers
+
+	err = handlers.InitAdminUser(database) // Pass the database instance to InitAdminUser
+	if err != nil {
+		log.Fatalf("Could not initialize admin user: %v", err)
+	}
 
 	r := mux.NewRouter()
 	r.HandleFunc("/register", handlers.Register).Methods("POST")
 	r.HandleFunc("/login", handlers.Login).Methods("POST")
 
-	// Example additional routes
-	r.HandleFunc("/posts", handlers.CreatePost).Methods("POST")
-	r.HandleFunc("/posts", handlers.GetPosts).Methods("GET")
-	r.HandleFunc("/posts/{id}", handlers.GetPost).Methods("GET")
-	r.HandleFunc("/posts/{id}", handlers.UpdatePost).Methods("PUT")
-	r.HandleFunc("/posts/{id}", handlers.DeletePost).Methods("DELETE")
-	r.HandleFunc("/categories/{category_id}/posts", handlers.GetPostsByCategory).Methods("GET")
+	// Protected endpoints
+	r.HandleFunc("/posts", handlers.IsAuthorized(handlers.CreatePost, "user")).Methods("POST")
+	r.HandleFunc("/posts/{id}", handlers.IsAuthorized(handlers.UpdatePost, "user")).Methods("PUT")
+	r.HandleFunc("/posts/{id}", handlers.IsAuthorized(handlers.DeletePost, "user")).Methods("DELETE")
+	r.HandleFunc("/admin/users", handlers.IsAuthorized(handlers.GetAllUsers, "admin")).Methods("GET")
+	r.HandleFunc("/admin/users/{id}", handlers.IsAuthorized(handlers.DeleteUser, "admin")).Methods("DELETE")
+	r.HandleFunc("/admin/users/{id}/role", handlers.IsAuthorized(handlers.UpdateUserRole, "admin")).Methods("PUT")
 
 	log.Println("Server started at :8080")
 	log.Fatal(http.ListenAndServe(":8080", r))

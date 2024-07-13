@@ -2,7 +2,8 @@ CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT NOT NULL UNIQUE,
     username TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL
+    password TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('user', 'admin'))
 );
 
 CREATE TABLE IF NOT EXISTS categories (
@@ -41,5 +42,3 @@ CREATE TABLE IF NOT EXISTS likes (
     FOREIGN KEY (comment_id) REFERENCES comments(id),
     UNIQUE (user_id, post_id, comment_id)
 );
-
-

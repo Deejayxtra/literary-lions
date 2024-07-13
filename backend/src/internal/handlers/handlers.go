@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -18,6 +17,7 @@ var jwtKey = []byte("my_secret_key")
 type Credentials struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+	Email    string `json:"email"` // Added email field for registration
 }
 
 type Claims struct {
@@ -44,20 +44,14 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := db.Exec("INSERT INTO users (username, password, role) VALUES (?, ?, 'user')", creds.Username, hashedPassword)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	userID, err := result.LastInsertId()
+	_, err = db.Exec("INSERT INTO users (username, password, role) VALUES (?, ?, 'user')", creds.Username, hashedPassword)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message":"User registered successfully", "user_id":` + strconv.FormatInt(userID, 10) + `}`))
+	w.Write([]byte("User registered successfully"))
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
@@ -109,7 +103,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	})
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message":"User logged in successfully", "token":"` + tokenString + `"}`))
+	w.Write([]byte("User logged in successfully"))
 }
 
 func IsAuthorized(endpoint func(http.ResponseWriter, *http.Request, *Claims), role string) http.HandlerFunc {
@@ -177,44 +171,53 @@ func CreatePost(w http.ResponseWriter, r *http.Request, claims *Claims) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(`{"message":"Post created successfully", "post_id":` + strconv.FormatInt(postID, 10) + `}`))
+	response := map[string]interface{}{
+		"message":  "Post created successfully",
+		"post_id":  postID,
+		"username": claims.Username,
+	}
+	json.NewEncoder(w).Encode(response)
 }
 
-func GetPosts(w http.ResponseWriter, r *http.Request, claims *Claims) {
-	posts := []map[string]interface{}{}
-	rows, err := db.Query("SELECT id, title, content FROM posts WHERE category_id = ?", mux.Vars(r)["category_id"])
+func UpdatePost(w http.ResponseWriter, r *http.Request, claims *Claims) {
+	var post struct {
+		Title   string `json:"title"`
+		Content string `json:"content"`
+	}
+
+	postID := mux.Vars(r)["id"]
+
+	err := json.NewDecoder(r.Body).Decode(&post)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	_, err = db.Exec("UPDATE posts SET title = ?, content = ? WHERE id = ? AND user_id = (SELECT id FROM users WHERE username = ?)", post.Title, post.Content, postID, claims.Username)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		var post struct {
-			ID      int    `json:"id"`
-			Title   string `json:"title"`
-			Content string `json:"content"`
-		}
-		if err := rows.Scan(&post.ID, &post.Title, &post.Content); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		posts = append(posts, map[string]interface{}{"id": post.ID, "title": post.Title, "content": post.Content})
+	w.WriteHeader(http.StatusOK)
+	response := map[string]interface{}{
+		"message":  "Post updated successfully",
+		"post_id":  postID,
+		"username": claims.Username,
 	}
-
-	json.NewEncoder(w).Encode(posts)
+	json.NewEncoder(w).Encode(response)
 }
 
 func GetPost(w http.ResponseWriter, r *http.Request, claims *Claims) {
+	postID := mux.Vars(r)["id"]
+
 	var post struct {
-		ID         int    `json:"id"`
-		Title      string `json:"title"`
-		Content    string `json:"content"`
-		UserID     int    `json:"user_id"`
-		CategoryID int    `json:"category_id"`
+		ID      int    `json:"id"`
+		Title   string `json:"title"`
+		Content string `json:"content"`
 	}
 
-	err := db.QueryRow("SELECT id, title, content, user_id, category_id FROM posts WHERE id = ?", mux.Vars(r)["id"]).Scan(&post.ID, &post.Title, &post.Content, &post.UserID, &post.CategoryID)
+	err := db.QueryRow("SELECT id, title, content FROM posts WHERE id = ?", postID).Scan(&post.ID, &post.Title, &post.Content)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)
@@ -224,33 +227,34 @@ func GetPost(w http.ResponseWriter, r *http.Request, claims *Claims) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(post)
+	w.WriteHeader(http.StatusOK)
+	response := map[string]interface{}{
+		"id":      post.ID,
+		"title":   post.Title,
+		"content": post.Content,
+	}
+	json.NewEncoder(w).Encode(response)
 }
 
-func UpdatePost(w http.ResponseWriter, r *http.Request, claims *Claims) {
-	var post struct {
-		Title   string `json:"title"`
-		Content string `json:"content"`
-	}
+func DeletePost(w http.ResponseWriter, r *http.Request, claims *Claims) {
+	postID := mux.Vars(r)["id"]
 
-	err := json.NewDecoder(r.Body).Decode(&post)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	_, err = db.Exec("UPDATE posts SET title = ?, content = ? WHERE id = ? AND user_id = (SELECT id FROM users WHERE username = ?)", post.Title, post.Content, mux.Vars(r)["id"], claims.Username)
+	_, err := db.Exec("DELETE FROM posts WHERE id = ? AND user_id = (SELECT id FROM users WHERE username = ?)", postID, claims.Username)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message":"Post updated successfully", "post_id":` + mux.Vars(r)["id"] + `}`))
+	response := map[string]interface{}{
+		"message":  "Post deleted successfully",
+		"post_id":  postID,
+		"username": claims.Username,
+	}
+	json.NewEncoder(w).Encode(response)
 }
 
 func GetAllUsers(w http.ResponseWriter, r *http.Request, claims *Claims) {
-	users := []map[string]interface{}{}
 	rows, err := db.Query("SELECT id, username, email, role FROM users")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -258,6 +262,7 @@ func GetAllUsers(w http.ResponseWriter, r *http.Request, claims *Claims) {
 	}
 	defer rows.Close()
 
+	users := []map[string]interface{}{}
 	for rows.Next() {
 		var user struct {
 			ID       int    `json:"id"`
@@ -265,32 +270,88 @@ func GetAllUsers(w http.ResponseWriter, r *http.Request, claims *Claims) {
 			Email    string `json:"email"`
 			Role     string `json:"role"`
 		}
-		if err := rows.Scan(&user.ID, &user.Username, &user.Email, &user.Role); err != nil {
+		err := rows.Scan(&user.ID, &user.Username, &user.Email, &user.Role)
+		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		users = append(users, map[string]interface{}{"id": user.ID, "username": user.Username, "email": user.Email, "role": user.Role})
+		users = append(users, map[string]interface{}{
+			"id":       user.ID,
+			"username": user.Username,
+			"email":    user.Email,
+			"role":     user.Role,
+		})
 	}
 
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(users)
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request, claims *Claims) {
-	_, err := db.Exec("DELETE FROM users WHERE id = ?", mux.Vars(r)["id"])
+	userID := mux.Vars(r)["id"]
+
+	_, err := db.Exec("DELETE FROM users WHERE id = ?", userID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message":"User deleted successfully", "user_id":` + mux.Vars(r)["id"] + `}`))
+	response := map[string]interface{}{
+		"message":  "User deleted successfully",
+		"user_id":  userID,
+		"username": claims.Username,
+	}
+	json.NewEncoder(w).Encode(response)
 }
 
-func DeletePost(w http.ResponseWriter, r *http.Request, claims *Claims) {
-	_, err := db.Exec("DELETE FROM posts WHERE id = ?", mux.Vars(r)["id"])
+func UpdateUserRole(w http.ResponseWriter, r *http.Request, claims *Claims) {
+	var user struct {
+		Role string `json:"role"`
+	}
+
+	userID := mux.Vars(r)["id"]
+
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	_, err = db.Exec("UPDATE users SET role = ? WHERE id = ?", user.Role, userID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message":"Post deleted successfully", "post_id":` + mux.Vars(r)["id"] + `}`))
+	response := map[string]interface{}{
+		"message":  "User role updated successfully",
+		"user_id":  userID,
+		"username": claims.Username,
+		"role":     user.Role,
+	}
+	json.NewEncoder(w).Encode(response)
+}
+
+func InitAdminUser(database *sql.DB) error {
+	var count int
+	err := database.QueryRow("SELECT COUNT(*) FROM users WHERE role = 'admin'").Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+
+		_, err = database.Exec("INSERT INTO users (username, password, role) VALUES (?, ?, 'admin')", "admin", hashedPassword)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
