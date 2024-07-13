@@ -4,260 +4,293 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
-
-	"github.com/gorilla/mux"
-)
-
-var db *sql.DB
-
-func InitHandlers(database *sql.DB) {
-	db = database
-}
-
-func Register(w http.ResponseWriter, r *http.Request) {
-	// Registration logic
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("User registered successfully"))
-}
-
-func Login(w http.ResponseWriter, r *http.Request) {
-	// Login logic
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("User logged in successfully"))
-}
-
-// Example additional handlers
-func CreatePost(w http.ResponseWriter, r *http.Request) {
-	// Logic to create a post
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("Post created successfully"))
-}
-
-func GetPosts(w http.ResponseWriter, r *http.Request) {
-	// Logic to get posts
-	posts := []string{"Post 1", "Post 2"} // Example data
-	json.NewEncoder(w).Encode(posts)
-}
-
-func GetPost(w http.ResponseWriter, r *http.Request) {
-	// Logic to get a single post
-	vars := mux.Vars(r)
-	id := vars["id"]
-	post := "Post " + id // Example data
-	w.Write([]byte(post))
-}
-
-func UpdatePost(w http.ResponseWriter, r *http.Request) {
-	// Logic to update a post
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Post updated successfully"))
-}
-
-func DeletePost(w http.ResponseWriter, r *http.Request) {
-	// Logic to delete a post
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Post deleted successfully"))
-}
-
-
-package handlers
-
-import (
-	"database/sql"
-	"encoding/json"
-	"net/http"
 	"strconv"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var db *sql.DB
+var jwtKey = []byte("my_secret_key")
 
-func InitHandlers(database *sql.DB) {
-	db = database
-}
-
-type User struct {
-	ID       int    `json:"id"`
-	Email    string `json:"email"`
+type Credentials struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
-type Post struct {
-	ID         int    `json:"id"`
-	UserID     int    `json:"user_id"`
-	CategoryID int    `json:"category_id"`
-	Title      string `json:"title"`
-	Content    string `json:"content"`
-	CreatedAt  string `json:"created_at"`
+type Claims struct {
+	Username string `json:"username"`
+	Role     string `json:"role"`
+	jwt.StandardClaims
+}
+
+func InitHandlers(database *sql.DB) {
+	db = database
 }
 
 func Register(w http.ResponseWriter, r *http.Request) {
-	var user User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	var creds Credentials
+	err := json.NewDecoder(r.Body).Decode(&creds)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	result, err := db.Exec("INSERT INTO users (email, username, password) VALUES (?, ?, ?)", user.Email, user.Username, user.Password)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(creds.Password), bcrypt.DefaultCost)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	id, err := result.LastInsertId()
+	result, err := db.Exec("INSERT INTO users (username, password, role) VALUES (?, ?, 'user')", creds.Username, hashedPassword)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	userID, err := result.LastInsertId()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{"id": id, "message": "User registered successfully"})
+	w.Write([]byte(`{"message":"User registered successfully", "user_id":` + strconv.FormatInt(userID, 10) + `}`))
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	// Login logic (usually involves checking the user's credentials)
-	// Simplified for this example
+	var creds Credentials
+	err := json.NewDecoder(r.Body).Decode(&creds)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var storedCreds Credentials
+	var role string
+	err = db.QueryRow("SELECT username, password, role FROM users WHERE username=?", creds.Username).Scan(&storedCreds.Username, &storedCreds.Password, &role)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(storedCreds.Password), []byte(creds.Password))
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	expirationTime := time.Now().Add(24 * time.Hour)
+	claims := &Claims{
+		Username: creds.Username,
+		Role:     role,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(jwtKey)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:    "token",
+		Value:   tokenString,
+		Expires: expirationTime,
+	})
+
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("User logged in successfully"))
+	w.Write([]byte(`{"message":"User logged in successfully", "token":"` + tokenString + `"}`))
 }
 
-func CreatePost(w http.ResponseWriter, r *http.Request) {
-	var post Post
-	if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+func IsAuthorized(endpoint func(http.ResponseWriter, *http.Request, *Claims), role string) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, err := r.Cookie("token")
+		if err != nil {
+			if err == http.ErrNoCookie {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		tknStr := c.Value
+		claims := &Claims{}
+		tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (interface{}, error) {
+			return jwtKey, nil
+		})
+		if err != nil {
+			if err == jwt.ErrSignatureInvalid {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if !tkn.Valid {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		if role != "" && claims.Role != role {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+
+		endpoint(w, r, claims)
+	})
+}
+
+func CreatePost(w http.ResponseWriter, r *http.Request, claims *Claims) {
+	var post struct {
+		CategoryID int    `json:"category_id"`
+		Title      string `json:"title"`
+		Content    string `json:"content"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&post)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	result, err := db.Exec("INSERT INTO posts (user_id, category_id, title, content) VALUES (?, ?, ?, ?)", post.UserID, post.CategoryID, post.Title, post.Content)
+	result, err := db.Exec("INSERT INTO posts (user_id, category_id, title, content) VALUES ((SELECT id FROM users WHERE username=?), ?, ?, ?)", claims.Username, post.CategoryID, post.Title, post.Content)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	id, err := result.LastInsertId()
+	postID, err := result.LastInsertId()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{}{"id": id, "message": "Post created successfully"})
+	w.Write([]byte(`{"message":"Post created successfully", "post_id":` + strconv.FormatInt(postID, 10) + `}`))
 }
 
-func GetPosts(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT id, user_id, category_id, title, content, created_at FROM posts")
+func GetPosts(w http.ResponseWriter, r *http.Request, claims *Claims) {
+	posts := []map[string]interface{}{}
+	rows, err := db.Query("SELECT id, title, content FROM posts WHERE category_id = ?", mux.Vars(r)["category_id"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
 
-	var posts []Post
 	for rows.Next() {
-		var post Post
-		if err := rows.Scan(&post.ID, &post.UserID, &post.CategoryID, &post.Title, &post.Content, &post.CreatedAt); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		var post struct {
+			ID      int    `json:"id"`
+			Title   string `json:"title"`
+			Content string `json:"content"`
+		}
+		if err := rows.Scan(&post.ID, &post.Title, &post.Content); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		posts = append(posts, post)
+		posts = append(posts, map[string]interface{}{"id": post.ID, "title": post.Title, "content": post.Content})
 	}
 
-	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(posts)
 }
 
-func GetPostsByCategory(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	categoryID, err := strconv.Atoi(vars["category_id"])
-	if err != nil {
-		http.Error(w, "Invalid category ID", http.StatusBadRequest)
-		return
+func GetPost(w http.ResponseWriter, r *http.Request, claims *Claims) {
+	var post struct {
+		ID         int    `json:"id"`
+		Title      string `json:"title"`
+		Content    string `json:"content"`
+		UserID     int    `json:"user_id"`
+		CategoryID int    `json:"category_id"`
 	}
 
-	rows, err := db.Query("SELECT id, user_id, category_id, title, content, created_at FROM posts WHERE category_id = ?", categoryID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
-
-	var posts []Post
-	for rows.Next() {
-		var post Post
-		if err := rows.Scan(&post.ID, &post.UserID, &post.CategoryID, &post.Title, &post.Content, &post.CreatedAt); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		posts = append(posts, post)
-	}
-
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(posts)
-}
-
-func GetPost(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		http.Error(w, "Invalid post ID", http.StatusBadRequest)
-		return
-	}
-
-	var post Post
-	err = db.QueryRow("SELECT id, user_id, category_id, title, content, created_at FROM posts WHERE id = ?", id).Scan(&post.ID, &post.UserID, &post.CategoryID, &post.Title, &post.Content, &post.CreatedAt)
+	err := db.QueryRow("SELECT id, title, content, user_id, category_id FROM posts WHERE id = ?", mux.Vars(r)["id"]).Scan(&post.ID, &post.Title, &post.Content, &post.UserID, &post.CategoryID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, "Post not found", http.StatusNotFound)
-		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(post)
 }
 
-func UpdatePost(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+func UpdatePost(w http.ResponseWriter, r *http.Request, claims *Claims) {
+	var post struct {
+		Title   string `json:"title"`
+		Content string `json:"content"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&post)
 	if err != nil {
-		http.Error(w, "Invalid post ID", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	var post Post
-	if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	_, err = db.Exec("UPDATE posts SET title = ?, content = ? WHERE id = ?", post.Title, post.Content, id)
+	_, err = db.Exec("UPDATE posts SET title = ?, content = ? WHERE id = ? AND user_id = (SELECT id FROM users WHERE username = ?)", post.Title, post.Content, mux.Vars(r)["id"], claims.Username)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{"id": id, "message": "Post updated successfully"})
+	w.Write([]byte(`{"message":"Post updated successfully", "post_id":` + mux.Vars(r)["id"] + `}`))
 }
 
-func DeletePost(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+func GetAllUsers(w http.ResponseWriter, r *http.Request, claims *Claims) {
+	users := []map[string]interface{}{}
+	rows, err := db.Query("SELECT id, username, email, role FROM users")
 	if err != nil {
-		http.Error(w, "Invalid post ID", http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	defer rows.Close()
 
-	_, err = db.Exec("DELETE FROM posts WHERE id = ?", id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	for rows.Next() {
+		var user struct {
+			ID       int    `json:"id"`
+			Username string `json:"username"`
+			Email    string `json:"email"`
+			Role     string `json:"role"`
+		}
+		if err := rows.Scan(&user.ID, &user.Username, &user.Email, &user.Role); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		users = append(users, map[string]interface{}{"id": user.ID, "username": user.Username, "email": user.Email, "role": user.Role})
 	}
 
+	json.NewEncoder(w).Encode(users)
+}
+
+func DeleteUser(w http.ResponseWriter, r *http.Request, claims *Claims) {
+	_, err := db.Exec("DELETE FROM users WHERE id = ?", mux.Vars(r)["id"])
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{"id": id, "message": "Post deleted successfully"})
+	w.Write([]byte(`{"message":"User deleted successfully", "user_id":` + mux.Vars(r)["id"] + `}`))
+}
+
+func DeletePost(w http.ResponseWriter, r *http.Request, claims *Claims) {
+	_, err := db.Exec("DELETE FROM posts WHERE id = ?", mux.Vars(r)["id"])
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message":"Post deleted successfully", "post_id":` + mux.Vars(r)["id"] + `}`))
 }
