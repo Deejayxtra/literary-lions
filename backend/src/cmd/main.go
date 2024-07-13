@@ -1,10 +1,11 @@
 package main
 
 import (
-	"literary-lions/backend/src/internal/db"
-	"literary-lions/backend/src/internal/handlers"
 	"log"
 	"net/http"
+
+	"literary-lions/backend/src/internal/db"
+	"literary-lions/backend/src/internal/handlers"
 
 	"github.com/gorilla/mux"
 )
@@ -21,7 +22,13 @@ func main() {
 	r.HandleFunc("/register", handlers.Register).Methods("POST")
 	r.HandleFunc("/login", handlers.Login).Methods("POST")
 
-	// Add more routes for posts, comments, likes, etc.
+	// Example additional routes
+	r.HandleFunc("/posts", handlers.CreatePost).Methods("POST")
+	r.HandleFunc("/posts", handlers.GetPosts).Methods("GET")
+	r.HandleFunc("/posts/{id}", handlers.GetPost).Methods("GET")
+	r.HandleFunc("/posts/{id}", handlers.UpdatePost).Methods("PUT")
+	r.HandleFunc("/posts/{id}", handlers.DeletePost).Methods("DELETE")
+	r.HandleFunc("/categories/{category_id}/posts", handlers.GetPostsByCategory).Methods("GET")
 
 	log.Println("Server started at :8080")
 	log.Fatal(http.ListenAndServe(":8080", r))

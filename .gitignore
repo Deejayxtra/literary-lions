@@ -21,3 +21,5 @@
 # Go workspace file
 go.work
 
+#db file
+backend/src/cmd/literary_lions.db
