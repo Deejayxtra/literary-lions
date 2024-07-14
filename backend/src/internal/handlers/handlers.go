@@ -17,7 +17,7 @@ var jwtKey = []byte("my_secret_key")
 type Credentials struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
-	Email    string `json:"email"` // Added email field for registration
+	Email    string `json:"email"`
 }
 
 type Claims struct {
@@ -44,7 +44,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = db.Exec("INSERT INTO users (username, password, role) VALUES (?, ?, 'user')", creds.Username, hashedPassword)
+	_, err = db.Exec("INSERT INTO users (email, username, password, role) VALUES (?, ?, ?, 'user')", creds.Email, creds.Username, hashedPassword)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -64,7 +64,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	var storedCreds Credentials
 	var role string
-	err = db.QueryRow("SELECT username, password, role FROM users WHERE username=?", creds.Username).Scan(&storedCreds.Username, &storedCreds.Password, &role)
+	err = db.QueryRow("SELECT email, username, password, role FROM users WHERE username=?", creds.Username).Scan(&storedCreds.Email, &storedCreds.Username, &storedCreds.Password, &role)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -208,6 +208,24 @@ func UpdatePost(w http.ResponseWriter, r *http.Request, claims *Claims) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func DeletePost(w http.ResponseWriter, r *http.Request, claims *Claims) {
+	postID := mux.Vars(r)["id"]
+
+	_, err := db.Exec("DELETE FROM posts WHERE id = ? AND user_id = (SELECT id FROM users WHERE username = ?)", postID, claims.Username)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	response := map[string]interface{}{
+		"message":  "Post deleted successfully",
+		"post_id":  postID,
+		"username": claims.Username,
+	}
+	json.NewEncoder(w).Encode(response)
+}
+
 func GetPost(w http.ResponseWriter, r *http.Request, claims *Claims) {
 	postID := mux.Vars(r)["id"]
 
@@ -232,24 +250,6 @@ func GetPost(w http.ResponseWriter, r *http.Request, claims *Claims) {
 		"id":      post.ID,
 		"title":   post.Title,
 		"content": post.Content,
-	}
-	json.NewEncoder(w).Encode(response)
-}
-
-func DeletePost(w http.ResponseWriter, r *http.Request, claims *Claims) {
-	postID := mux.Vars(r)["id"]
-
-	_, err := db.Exec("DELETE FROM posts WHERE id = ? AND user_id = (SELECT id FROM users WHERE username = ?)", postID, claims.Username)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	response := map[string]interface{}{
-		"message":  "Post deleted successfully",
-		"post_id":  postID,
-		"username": claims.Username,
 	}
 	json.NewEncoder(w).Encode(response)
 }
@@ -298,27 +298,26 @@ func DeleteUser(w http.ResponseWriter, r *http.Request, claims *Claims) {
 
 	w.WriteHeader(http.StatusOK)
 	response := map[string]interface{}{
-		"message":  "User deleted successfully",
-		"user_id":  userID,
-		"username": claims.Username,
+		"message": "User deleted successfully",
+		"user_id": userID,
 	}
 	json.NewEncoder(w).Encode(response)
 }
 
 func UpdateUserRole(w http.ResponseWriter, r *http.Request, claims *Claims) {
-	var user struct {
+	var roleUpdate struct {
 		Role string `json:"role"`
 	}
 
 	userID := mux.Vars(r)["id"]
 
-	err := json.NewDecoder(r.Body).Decode(&user)
+	err := json.NewDecoder(r.Body).Decode(&roleUpdate)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	_, err = db.Exec("UPDATE users SET role = ? WHERE id = ?", user.Role, userID)
+	_, err = db.Exec("UPDATE users SET role = ? WHERE id = ?", roleUpdate.Role, userID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -326,32 +325,28 @@ func UpdateUserRole(w http.ResponseWriter, r *http.Request, claims *Claims) {
 
 	w.WriteHeader(http.StatusOK)
 	response := map[string]interface{}{
-		"message":  "User role updated successfully",
-		"user_id":  userID,
-		"username": claims.Username,
-		"role":     user.Role,
+		"message": "User role updated successfully",
+		"user_id": userID,
+		"role":    roleUpdate.Role,
 	}
 	json.NewEncoder(w).Encode(response)
 }
 
-func InitAdminUser(database *sql.DB) error {
+func InitAdminUser() error {
 	var count int
-	err := database.QueryRow("SELECT COUNT(*) FROM users WHERE role = 'admin'").Scan(&count)
+	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE username = 'admin'").Scan(&count)
 	if err != nil {
 		return err
 	}
-
 	if count == 0 {
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
 		if err != nil {
 			return err
 		}
-
-		_, err = database.Exec("INSERT INTO users (username, password, role) VALUES (?, ?, 'admin')", "admin", hashedPassword)
+		_, err = db.Exec("INSERT INTO users (email, username, password, role) VALUES ('admin@example.com', 'admin', ?, 'admin')", hashedPassword)
 		if err != nil {
 			return err
 		}
 	}
-
 	return nil
 }

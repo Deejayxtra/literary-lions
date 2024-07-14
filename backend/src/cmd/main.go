@@ -18,7 +18,8 @@ func main() {
 
 	handlers.InitHandlers(database) // Pass the database instance to handlers
 
-	err = handlers.InitAdminUser(database) // Pass the database instance to InitAdminUser
+	// err = handlers.InitAdminUser(database) // Pass the database instance to InitAdminUser
+	err = handlers.InitAdminUser()
 	if err != nil {
 		log.Fatalf("Could not initialize admin user: %v", err)
 	}

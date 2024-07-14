@@ -77,7 +77,7 @@ func createDefaultAdmin(db *sql.DB) {
 
 	if err == sql.ErrNoRows {
 		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
-		_, err := db.Exec("INSERT INTO users (username, password, role) VALUES (?, ?, 'admin')", "admin", hashedPassword)
+		_, err := db.Exec("INSERT INTO users (email, username, password, role) VALUES (?, ?, ?, 'admin')", "admin@mail.com", "admin", hashedPassword)
 		if err != nil {
 			log.Fatalf("Could not create admin user: %v", err)
 		}
