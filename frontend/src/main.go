@@ -1,17 +1,21 @@
 package main
 
 import (
-	"literary-lions/frontend/src/handlers"
-	"log"
-	"net/http"
-
-	"github.com/gorilla/mux"
+    "log"
+    "net/http"
+    "literary-lions/frontend/src/handlers"
 )
 
 func main() {
-	r := mux.NewRouter()
-	r.HandleFunc("/", handlers.HomeHandler).Methods("GET")
+	
+	// Define your handlers for routes
+	http.HandleFunc("/", handlers.HomeHandler)
+	http.HandleFunc("/register", handlers.Register)
+	http.HandleFunc("/login", handlers.Login)
+	http.HandleFunc("/post-comment", handlers.PostComment)
+	http.HandleFunc("/create-channel", handlers.CreateChannel)
 
-	log.Println("Frontend server started at :8081")
-	log.Fatal(http.ListenAndServe(":8081", r))
+	// Start the server
+	log.Println("Server started on :8000")
+	log.Fatal(http.ListenAndServe(":8000", nil))
 }
