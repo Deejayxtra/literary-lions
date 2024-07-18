@@ -7,15 +7,17 @@ import (
 )
 
 func main() {
-	
-	// Define your handlers for routes
-	http.HandleFunc("/", handlers.HomeHandler)
-	http.HandleFunc("/register", handlers.Register)
-	http.HandleFunc("/login", handlers.Login)
-	http.HandleFunc("/post-comment", handlers.PostComment)
-	http.HandleFunc("/create-channel", handlers.CreateChannel)
+    // Define your handlers for routes
+    http.HandleFunc("/", handlers.HomeHandler)
+    http.HandleFunc("/register", handlers.Register)
+    http.HandleFunc("/login", handlers.Login)
+    http.HandleFunc("/login-handler", handlers.LoginHandler) // New handler for processing login
+    http.HandleFunc("/logout", handlers.Logout)
+   // http.HandleFunc("/post-comment", handlers.PostComment)
+   // http.HandleFunc("/create-channel", handlers.CreateChannel)
+    http.HandleFunc("/conversation-room", handlers.ConversationRoom)
 
-	// Start the server
-	log.Println("Server started on :8000")
-	log.Fatal(http.ListenAndServe(":8000", nil))
+    // Start the server
+    log.Println("Server started on :8000")
+    log.Fatal(http.ListenAndServe(":8000", nil))
 }
