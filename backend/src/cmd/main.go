@@ -1,41 +1,61 @@
 package main
 
 import (
+	"database/sql"
 	"log"
-	"net/http"
 
-	"literary-lions/backend/src/internal/db"
+	"github.com/gin-gonic/gin"
+	_ "github.com/mattn/go-sqlite3"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
+	"literary-lions/backend/src/docs"
 	"literary-lions/backend/src/internal/handlers"
-
-	"github.com/gorilla/mux"
 )
 
 func main() {
-	database, err := db.InitDB()
+	// Database connection
+	db, err := sql.Open("sqlite3", "./forum.db")
 	if err != nil {
-		log.Fatalf("Could not initialize database: %v", err)
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	handlers.InitHandlers(database) // Pass the database instance to handlers
+	handlers.InitHandlers(db)
 
-	// err = handlers.InitAdminUser(database) // Pass the database instance to InitAdminUser
-	err = handlers.InitAdminUser()
-	if err != nil {
-		log.Fatalf("Could not initialize admin user: %v", err)
-	}
+	// Swagger documentation
+	docs.SwaggerInfo.Title = "API Documentation"
+	docs.SwaggerInfo.Description = "This is the API documentation for the Gin API."
+	docs.SwaggerInfo.Version = "1.0"
+	docs.SwaggerInfo.Host = "localhost:8080"
+	docs.SwaggerInfo.BasePath = "/"
+	docs.SwaggerInfo.Schemes = []string{"http"}
 
-	r := mux.NewRouter()
-	r.HandleFunc("/register", handlers.Register).Methods("POST")
-	r.HandleFunc("/login", handlers.Login).Methods("POST")
+	r := gin.Default()
 
-	// Protected endpoints
-	r.HandleFunc("/posts", handlers.IsAuthorized(handlers.CreatePost, "user")).Methods("POST")
-	r.HandleFunc("/posts/{id}", handlers.IsAuthorized(handlers.UpdatePost, "user")).Methods("PUT")
-	r.HandleFunc("/posts/{id}", handlers.IsAuthorized(handlers.DeletePost, "user")).Methods("DELETE")
-	r.HandleFunc("/admin/users", handlers.IsAuthorized(handlers.GetAllUsers, "admin")).Methods("GET")
-	r.HandleFunc("/admin/users/{id}", handlers.IsAuthorized(handlers.DeleteUser, "admin")).Methods("DELETE")
-	r.HandleFunc("/admin/users/{id}/role", handlers.IsAuthorized(handlers.UpdateUserRole, "admin")).Methods("PUT")
+	// Serve Swagger UI
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	log.Println("Server started at :8080")
-	log.Fatal(http.ListenAndServe(":8080", r))
+	r.POST("/register", handlers.Register)
+	r.POST("/login", handlers.Login)
+
+	api := r.Group("/api", func(c *gin.Context) {
+		c.Next()
+	})
+
+	api.POST("/posts", handlers.IsAuthorized(handlers.CreatePost, "user"))
+	api.PUT("/posts/:id", handlers.IsAuthorized(handlers.UpdatePost, "user"))
+	api.DELETE("/posts/:id", handlers.IsAuthorized(handlers.DeletePost, "user"))
+	api.GET("/posts/:id", handlers.GetPost)
+
+	api.GET("/users", handlers.IsAuthorized(handlers.GetAllUsers, "admin"))
+	api.DELETE("/users/:id", handlers.IsAuthorized(handlers.DeleteUser, "admin"))
+	api.PUT("/users/:id/role", handlers.IsAuthorized(handlers.UpdateUserRole, "admin"))
+
+	r.Run(":8080")
 }
