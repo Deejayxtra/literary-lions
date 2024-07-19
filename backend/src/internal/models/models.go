@@ -37,3 +37,5 @@ type Like struct {
 	UserID    int  `json:"user_id"`
 	IsLike    bool `json:"is_like"`
 }
+
+

@@ -6,6 +6,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+
+type Credentials struct {
+	Email    string `json:"email"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 // User struct represents a user in the system.
 type User struct {
 	ID       int    `json:"id"`
@@ -58,15 +65,20 @@ type Message struct {
 
 // AuthenticateUser simulates user authentication.
 func AuthenticateUser(email, password string) (*User, error) {
-	user, err := GetUserByEmail(email)
-	if err != nil || !user.CheckPassword(password) {
-		return nil, errors.New("invalid credentials")
+	// Example: hardcoded user for demonstration purposes
+	if email == "test@example.com" {
+		return &User{
+			ID:       1,
+			Email:    email,
+			Username: "testuser",
+			Password: "$2a$12$wJ89JKZa/nH/jf/Y0BZhKuGrOq1BF9N6ZOHYpDkqI9lRdfq9nWJ.e", // bcrypt hash for "password123"
+		}, nil
 	}
-	return user, nil
+	return nil, errors.New("user not found")
 }
 
-func (u *User) CheckPassword(password string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
+func (user *User) CheckPassword(password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	return err == nil
 }
 
@@ -77,6 +89,7 @@ func GetUserByEmail(email string) (*User, error) {
 	return &User{
 		Email:    "test@example.com",
 		Username: "testuser",
+		// Password: "Ud21wC+n/y0I27JcwIEGRA==",
 		Password: "$2a$12$wJ89JKZa/nH/jf/Y0BZhKuGrOq1BF9N6ZOHYpDkqI9lRdfq9nWJ.e", // bcrypt hash of "password"
 	}, nil
 }

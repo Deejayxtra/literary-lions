@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"literary-lions/backend/src/internal/models"
-
 	"golang.org/x/crypto/bcrypt"
 )
 

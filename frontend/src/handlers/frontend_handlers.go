@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -21,7 +22,6 @@ var (
 // HomeHandler handles the home page request.
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	RenderTemplate(w, "index.html", nil)
-
 }
 
 // Register handles user registration.
@@ -31,47 +31,77 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
+	// Sample credentials
+	credential := models.Credentials {
+		Email:    "test@example.com",
+		Username: "testuser",
+		Password: "password123",
 	}
 
-	// Check Content-Type header
-	contentType := r.Header.Get("Content-Type")
-	if contentType != "application/json" {
-		http.Error(w, "Content-Type header must be application/json", http.StatusUnsupportedMediaType)
-		return
-	}
-
-	var user models.User
-	err := json.NewDecoder(r.Body).Decode(&user)
+	// Marshal the user object to JSON.
+	jsonData, err := json.Marshal(credential)
 	if err != nil {
-		log.Printf("Error decoding JSON request body: %v", err)
-		http.Error(w, "Invalid input", http.StatusBadRequest)
+		fmt.Println("Error marshaling JSON:", err)
+		http.Error(w, "Error marshaling JSON", http.StatusInternalServerError)
 		return
 	}
 
-	err = models.CreateUser(user.Email, user.Username, user.Password)
+	// Create a new HTTP request.
+	req, err := http.NewRequest("POST", "http://localhost:8000/register", bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Printf("Error creating user: %v", err)
-		http.Error(w, "Failed to register user", http.StatusInternalServerError)
+		fmt.Println("Error creating HTTP request:", err)
+		http.Error(w, "Error creating HTTP request", http.StatusInternalServerError)
 		return
 	}
+
+	// Set the Content-Type header to application/json.
+	req.Header.Set("Content-Type", "application/json")
+
+	// client := &http.Client{}
+	// resp, err := client.Do(req)
+	// if err != nil {
+	// 	fmt.Println("Error sending HTTP request:", err)
+	// 	http.Error(w, "Error sending HTTP request", http.StatusInternalServerError)
+	// 	return
+	// }
+	// defer resp.Body.Close()
+
+	// if resp.StatusCode != http.StatusOK {
+	// 	http.Error(w, "Error registering user", resp.StatusCode)
+	// 	return
+	// }
 
 	// Redirect to the login page after successful registration
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
+// // Login displays the login page.
+// func Login(w http.ResponseWriter, r *http.Request) {
+// 	if r.Method == http.MethodGet {
+// 		RenderTemplate(w, "login.html", nil)
+// 		return
+// 	}
 
-// Login displays the login page.
-func Login(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		RenderTemplate(w, "login.html", nil)
-		return
+// 	http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+// }
+
+func SendLoginRequest(email, password string) (*http.Response, error) {
+	loginData := map[string]string{"email": email, "password": password}
+	jsonData, err := json.Marshal(loginData)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling JSON: %w", err)
 	}
 
-	http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+	req, err := http.NewRequest("POST", "http://localhost:8000/login-handler", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, fmt.Errorf("error creating HTTP request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	return client.Do(req)
 }
+
 
 // LoginHandler handles user login and redirects to the conversation room.
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -98,8 +128,19 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Authenticate user
 	user, err := models.AuthenticateUser(credentials.Email, credentials.Password)
 	if err != nil {
+		fmt.Printf("Invalid credentials: %s\n", err)
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	fmt.Printf("Provided password: %s\n", credentials.Password)
+	fmt.Printf("Stored password hash: %s\n", user.Password)
+
+	if !user.CheckPassword(credentials.Password) {
+		fmt.Printf("password error: %s\n", err)
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
@@ -122,6 +163,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	// Redirect to the conversation room after successful login
 	http.Redirect(w, r, "/conversation-room", http.StatusSeeOther)
 }
+
 
 // Logout handles user logout.
 func Logout(w http.ResponseWriter, r *http.Request) {
@@ -197,7 +239,7 @@ func generateJWTToken(user *models.User) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	// Sign the token with a secret
-	tokenString, err := token.SignedString([]byte("your-secret-key"))
+	tokenString, err := token.SignedString([]byte("$2a$12$wJ89JKZa/nH/jf/Y0BZhKuGrOq1BF9N6ZOHYpDkqI9lRdfq9nWJ.e"))
 	if err != nil {
 		return "", fmt.Errorf("failed to sign token: %w", err)
 	}
