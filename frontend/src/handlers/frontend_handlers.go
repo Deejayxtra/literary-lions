@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+	"io/ioutil"
 
-	"github.com/dgrijalva/jwt-go"
 	"literary-lions/frontend/src/models"
 )
 
@@ -38,9 +38,10 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 		// Print credentials for debugging
 		fmt.Printf("Credentials: email=%s, password=%s\n, username=%s\n", email, password, username)
-
-		// credChan := make(chan models.Credentials)
-		errChan := make(chan error)
+		
+		respChan := make(chan models.ResponseDetails, 1)
+		// errChan := make(chan error, 1)
+		var wg sync.WaitGroup
 
 		// Sample credentials
 		credentials := models.Credentials {
@@ -49,104 +50,58 @@ func Register(w http.ResponseWriter, r *http.Request) {
 			Password: password,
 		}
 
+		wg.Add(1)
 		go func() {
-			fetchForUserRegisterAsync(credentials, errChan)
+			fetchForUserRegisterAsync(credentials, &wg, respChan)
 		}()
 
-		// Handle errors if any
-		var err error
+		// Wait for the goroutine to finish
+		go func() {
+			wg.Wait()
+			close(respChan)
+		}()
+
+		var responseDetails models.ResponseDetails
 		select {
-		case err := <-errChan:
-			fmt.Println("Error:", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		default:
-			// Pass data to the template
-			data := struct {
-				Success bool
-				Message string
-			}{
-				Success: err == nil,
-				Message: "",
+		case responseDetails = <-respChan:
+			// Handle response details
+			fmt.Println("Response:", responseDetails.Message)
+		case <-time.After(10 * time.Second):
+			responseDetails = models.ResponseDetails{
+				Success: false,
+				Message: "timeout while processing request",
 			}
-			if err != nil {
-				data.Message = "Registration failed: " + err.Error()
-			} else {
-				data.Message = "User registered successfully"
-			}
-			tmpl.Execute(w, data)
 		}
 
-		// // Call sendLoginRequest to process the login
-		// resp, err := handlers.SendLoginRequest(email, password)
-		// if err != nil {
-		//     http.Error(w, "Failed to send login request", http.StatusInternalServerError)
-		//     return
-		// }
-		// defer resp.Body.Close()
+		data := struct {
+			Success bool
+			Message string
+		}{
+			Success: responseDetails.Success,
+			Message: responseDetails.Message,
+		}
 
-		// // Write response status and body
-		// w.WriteHeader(resp.StatusCode)
-		// _, err = w.Write([]byte("Login request processed. Status: " + resp.Status))
-		// if err != nil {
-		//     http.Error(w, "Failed to write response", http.StatusInternalServerError)
-		// }
+		if err := tmpl.Execute(w, data); err != nil {
+			http.Error(w, "Error rendering template", http.StatusInternalServerError)
+			log.Fatalf("Error rendering template: %v", err)
+		}
 	} else {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 	}
-
-	// // Sample credentials
-	// credential := models.Credentials {
-	// 	Email:    "test@example.com",
-	// 	Username: "testuser",
-	// 	Password: "password123",
-	// }
-
-	// // Marshal the user object to JSON.
-	// jsonData, err := json.Marshal(credential)
-	// if err != nil {
-	// 	fmt.Println("Error marshaling JSON:", err)
-	// 	http.Error(w, "Error marshaling JSON", http.StatusInternalServerError)
-	// 	return
-	// }
-
-	// // Create a new HTTP request.
-	// req, err := http.NewRequest("POST", "http://localhost:8000/register", bytes.NewBuffer(jsonData))
-	// if err != nil {
-	// 	fmt.Println("Error creating HTTP request:", err)
-	// 	http.Error(w, "Error creating HTTP request", http.StatusInternalServerError)
-	// 	return
-	// }
-
-	// // Set the Content-Type header to application/json.
-	// req.Header.Set("Content-Type", "application/json")
-
-	// // client := &http.Client{}
-	// // resp, err := client.Do(req)
-	// // if err != nil {
-	// // 	fmt.Println("Error sending HTTP request:", err)
-	// // 	http.Error(w, "Error sending HTTP request", http.StatusInternalServerError)
-	// // 	return
-	// // }
-	// // defer resp.Body.Close()
-
-	// // if resp.StatusCode != http.StatusOK {
-	// // 	http.Error(w, "Error registering user", resp.StatusCode)
-	// // 	return
-	// // }
-
-	// Redirect to the login page after successful registration
-	//http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
 // fetchForUserRegisterAsync
-func fetchForUserRegisterAsync(credentials models.Credentials, errChan chan error) {
+func fetchForUserRegisterAsync(credentials models.Credentials, wg *sync.WaitGroup, respChan chan models.ResponseDetails) {
+
+	defer wg.Done() // Notify the wait group when this goroutine completes
 	
 	// Marshal the user object to JSON.
 	jsonData, err := json.Marshal(credentials)
 	if err != nil {
-		fmt.Println("Error marshaling JSON:", err)
-		errChan <- fmt.Errorf("error marshaling credentials: %w", err)
-		close(errChan)
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintf("error marshaling credentials: %v", err),
+		}
 		return
 	}
 
@@ -156,8 +111,13 @@ func fetchForUserRegisterAsync(credentials models.Credentials, errChan chan erro
 	url := "http://localhost:8080/register"
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		errChan <- fmt.Errorf("error creating request: %w", err)
-		close(errChan)
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintf("error creating request: %v", err),
+		}
+		// fmt.Println("Error creating request: \n", err)
+		// errChan <- fmt.Errorf("error creating request: %w", err)
+		// close(errChan)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -166,31 +126,52 @@ func fetchForUserRegisterAsync(credentials models.Credentials, errChan chan erro
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		errChan <- fmt.Errorf("error sending request: %w", err)
-		close(errChan)
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintf("error sending request: %v", err),
+		}
 		return
 	}
 	defer resp.Body.Close()
 
-	// Check response status
-	if resp.StatusCode != http.StatusOK {
-		errChan <- fmt.Errorf("received non-OK response status: %s", resp.Status)
-		close(errChan)
+	// Read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintf("error reading response: %v", err),
+		}
 		return
 	}
 
+	// Check response status code
+	if resp.StatusCode != http.StatusOK {
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintf("received non-OK response status: %s, body: %s", resp.Status, string(body)), // Edit response here
+		}
+		return
+	}
+
+	// Optionally, you can further process the response body if needed
+	var responseMessage map[string]interface{}
+	if err := json.Unmarshal(body, &responseMessage); err != nil {
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintf("error unmarshaling response: %v", err),
+		}
+		return
+	}
+
+	respChan <- models.ResponseDetails{
+		Success: true,
+		Message: fmt.Sprintf("User registered successfully. Server response: %v", responseMessage),
+	}
+
+	fmt.Println("Response from server:", responseMessage)
+
 	fmt.Printf("response: %v\n", resp.StatusCode)
 }
-
-// // Login displays the login page.
-// func Login(w http.ResponseWriter, r *http.Request) {
-// 	if r.Method == http.MethodGet {
-// 		RenderTemplate(w, "login.html", nil)
-// 		return
-// 	}
-
-// 	http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-// }
 
 func SendLoginRequest(email, password string) (*http.Response, error) {
 	loginData := map[string]string{"email": email, "password": password}
@@ -217,58 +198,93 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check Content-Type header
-	contentType := r.Header.Get("Content-Type")
-	if contentType != "application/json" {
-		http.Error(w, "Content-Type header must be application/json", http.StatusUnsupportedMediaType)
-		return
+	// Extract credentials from form values
+	email := r.FormValue("email")
+	password := r.FormValue("password")
+
+	// Print credentials for debugging
+	fmt.Printf("Credentials: email=%s, password=%s\n", email, password)
+
+	// Sample credentials
+	credentials := models.Credentials {
+		Email:    email,
+		Password: password,
 	}
 
-	var credentials struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
+	respChan := make(chan models.ResponseDetails, 1)
+	var wg sync.WaitGroup
+	wg.Add(1)
 
-	err := json.NewDecoder(r.Body).Decode(&credentials)
-	if err != nil {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
-		return
-	}
+	go fetchForUserLoginAsync(credentials, &wg, respChan)
 
-	// Authenticate user
-	user, err := models.AuthenticateUser(credentials.Email, credentials.Password)
-	if err != nil {
-		fmt.Printf("Invalid credentials: %s\n", err)
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		return
-	}
+	// Wait for the goroutine to finish
+	wg.Wait()
+	close(respChan)
 
-	fmt.Printf("Provided password: %s\n", credentials.Password)
-	fmt.Printf("Stored password hash: %s\n", user.Password)
-
-	if !user.CheckPassword(credentials.Password) {
-		fmt.Printf("password error: %s\n", err)
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		return
-	}
-
-	// Generate JWT token
-	sessionToken, err := generateJWTToken(user)
-	if err != nil {
-		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
-		return
-	}
-
-	// Set token as cookie
-	http.SetCookie(w, &http.Cookie{
-		Name:     "session_token",
-		Value:    sessionToken,
-		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
-	})
+	// Get the response
+	responseDetails := <-respChan
+	fmt.Printf("Login response: %+v\n", responseDetails)
 
 	// Redirect to the conversation room after successful login
 	http.Redirect(w, r, "/conversation-room", http.StatusSeeOther)
+}
+
+// fetchForUserLoginAsync
+func fetchForUserLoginAsync(credentials models.Credentials, wg *sync.WaitGroup, respChan chan models.ResponseDetails) {
+
+	defer wg.Done()
+
+	// Convert credentials to JSON
+	jsonData, err := json.Marshal(credentials)
+	if err != nil {
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintf("error marshaling credentials: %v", err),
+		}
+		return
+	}
+
+	// Create a POST request
+	req, err := http.NewRequest(http.MethodPost, "http://localhost:8080/login", bytes.NewBuffer(jsonData))
+	if err != nil {
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintf("error creating request: %v", err),
+		}
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintf("error sending request: %v", err),
+		}
+		return
+	}
+	defer resp.Body.Close()
+
+	// Read the response
+	var responseDetails models.ResponseDetails
+	if err := json.NewDecoder(resp.Body).Decode(&responseDetails); err != nil {
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintf("error decoding response: %v", err),
+		}
+		return
+	}
+
+	// Handle the response
+	if resp.StatusCode != http.StatusOK {
+		responseDetails.Success = false
+		responseDetails.Message = fmt.Sprintf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	respChan <- responseDetails
 }
 
 
@@ -334,22 +350,4 @@ func RenderTemplate(w http.ResponseWriter, tmplName string, data interface{}) {
 		log.Println(err)
 		return
 	}
-}
-
-// generateJWTToken generates a JWT token for the given user.
-func generateJWTToken(user *models.User) (string, error) {
-	// Create the Claims
-	claims := jwt.MapClaims{
-		"sub": user.ID,
-		"exp": time.Now().Add(time.Hour * 24).Unix(), // Token valid for 24 hours
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	// Sign the token with a secret
-	tokenString, err := token.SignedString([]byte("$2a$12$wJ89JKZa/nH/jf/Y0BZhKuGrOq1BF9N6ZOHYpDkqI9lRdfq9nWJ.e"))
-	if err != nil {
-		return "", fmt.Errorf("failed to sign token: %w", err)
-	}
-
-	return tokenString, nil
 }

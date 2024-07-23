@@ -13,6 +13,11 @@ type Credentials struct {
 	Password string `json:"password"`
 }
 
+type ResponseDetails struct {
+	Success bool
+	Message string
+}
+
 // User struct represents a user in the system.
 type User struct {
 	ID       int    `json:"id"`
