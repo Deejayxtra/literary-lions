@@ -71,7 +71,7 @@ func AuthenticateUser(email, password string) (*User, error) {
 			ID:       1,
 			Email:    email,
 			Username: "testuser",
-			Password: "$2a$12$wJ89JKZa/nH/jf/Y0BZhKuGrOq1BF9N6ZOHYpDkqI9lRdfq9nWJ.e", // bcrypt hash for "password123"
+			Password: "$2a$10$1yII3Pq/4FbDsZz5l4P2oOkKhCzI053GcP2LHKFvw1PeFNErc4Bd2", // bcrypt hash for "password123"
 		}, nil
 	}
 	return nil, errors.New("user not found")
@@ -90,7 +90,7 @@ func GetUserByEmail(email string) (*User, error) {
 		Email:    "test@example.com",
 		Username: "testuser",
 		// Password: "Ud21wC+n/y0I27JcwIEGRA==",
-		Password: "$2a$12$wJ89JKZa/nH/jf/Y0BZhKuGrOq1BF9N6ZOHYpDkqI9lRdfq9nWJ.e", // bcrypt hash of "password"
+		Password: "$2a$10$1yII3Pq/4FbDsZz5l4P2oOkKhCzI053GcP2LHKFvw1PeFNErc4Bd2", // bcrypt hash of "password"
 	}, nil
 }
 

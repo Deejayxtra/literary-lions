@@ -15,23 +15,11 @@ func main() {
             // Render the login form HTML
 			handlers.RenderTemplate(w, "login.html", nil)
 			return
-            // tmpl, err := template.ParseFiles("templates/login_form.html")
-            // if err != nil {
-            //     http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-            //     log.Println("Error parsing template:", err)
-            //     return
-            // }
-            // err = tmpl.Execute(w, nil)
-            // if err != nil {
-            //     http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-            //     log.Println("Error executing template:", err)
-            //     return
-            // }
         } else if r.Method == http.MethodPost {
             // Extract credentials from form values
             email := r.FormValue("email")
             password := r.FormValue("password")
-
+			
             // Print credentials for debugging
             fmt.Printf("Credentials: email=%s, password=%s\n", email, password)
 

@@ -9,6 +9,8 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+
+	"fmt"
 )
 
 var db *sql.DB
@@ -88,12 +90,12 @@ func Register(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
-
-	_, err = db.Exec("INSERT INTO users (email, username, password, role) VALUES (?, ?, ?, 'user')", creds.Email, creds.Username, hashedPassword)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
-		return
-	}
+		fmt.Printf("hashedpassword: %s\n", hashedPassword)
+	// _, err = db.Exec("INSERT INTO users (email, username, password, role) VALUES (?, ?, ?, 'user')", creds.Email, creds.Username, hashedPassword)
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+	// 	return
+	// }
 
 	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
 }

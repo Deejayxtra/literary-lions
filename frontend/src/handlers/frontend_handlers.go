@@ -29,50 +29,157 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		RenderTemplate(w, "register.html", nil)
 		return
+	} else if r.Method == http.MethodPost {
+		tmpl := template.Must(template.ParseFiles("templates/registration-status.html"))
+		// Extract credentials from form values
+		email := r.FormValue("email")
+		password := r.FormValue("password")
+		username := r.FormValue("username")
+
+		// Print credentials for debugging
+		fmt.Printf("Credentials: email=%s, password=%s\n, username=%s\n", email, password, username)
+
+		// credChan := make(chan models.Credentials)
+		errChan := make(chan error)
+
+		// Sample credentials
+		credentials := models.Credentials {
+			Email:    email,
+			Username: username,
+			Password: password,
+		}
+
+		go func() {
+			fetchForUserRegisterAsync(credentials, errChan)
+		}()
+
+		// Handle errors if any
+		var err error
+		select {
+		case err := <-errChan:
+			fmt.Println("Error:", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		default:
+			// Pass data to the template
+			data := struct {
+				Success bool
+				Message string
+			}{
+				Success: err == nil,
+				Message: "",
+			}
+			if err != nil {
+				data.Message = "Registration failed: " + err.Error()
+			} else {
+				data.Message = "User registered successfully"
+			}
+			tmpl.Execute(w, data)
+		}
+
+		// // Call sendLoginRequest to process the login
+		// resp, err := handlers.SendLoginRequest(email, password)
+		// if err != nil {
+		//     http.Error(w, "Failed to send login request", http.StatusInternalServerError)
+		//     return
+		// }
+		// defer resp.Body.Close()
+
+		// // Write response status and body
+		// w.WriteHeader(resp.StatusCode)
+		// _, err = w.Write([]byte("Login request processed. Status: " + resp.Status))
+		// if err != nil {
+		//     http.Error(w, "Failed to write response", http.StatusInternalServerError)
+		// }
+	} else {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 	}
 
-	// Sample credentials
-	credential := models.Credentials {
-		Email:    "test@example.com",
-		Username: "testuser",
-		Password: "password123",
-	}
+	// // Sample credentials
+	// credential := models.Credentials {
+	// 	Email:    "test@example.com",
+	// 	Username: "testuser",
+	// 	Password: "password123",
+	// }
 
-	// Marshal the user object to JSON.
-	jsonData, err := json.Marshal(credential)
-	if err != nil {
-		fmt.Println("Error marshaling JSON:", err)
-		http.Error(w, "Error marshaling JSON", http.StatusInternalServerError)
-		return
-	}
-
-	// Create a new HTTP request.
-	req, err := http.NewRequest("POST", "http://localhost:8000/register", bytes.NewBuffer(jsonData))
-	if err != nil {
-		fmt.Println("Error creating HTTP request:", err)
-		http.Error(w, "Error creating HTTP request", http.StatusInternalServerError)
-		return
-	}
-
-	// Set the Content-Type header to application/json.
-	req.Header.Set("Content-Type", "application/json")
-
-	// client := &http.Client{}
-	// resp, err := client.Do(req)
+	// // Marshal the user object to JSON.
+	// jsonData, err := json.Marshal(credential)
 	// if err != nil {
-	// 	fmt.Println("Error sending HTTP request:", err)
-	// 	http.Error(w, "Error sending HTTP request", http.StatusInternalServerError)
+	// 	fmt.Println("Error marshaling JSON:", err)
+	// 	http.Error(w, "Error marshaling JSON", http.StatusInternalServerError)
 	// 	return
 	// }
-	// defer resp.Body.Close()
 
-	// if resp.StatusCode != http.StatusOK {
-	// 	http.Error(w, "Error registering user", resp.StatusCode)
+	// // Create a new HTTP request.
+	// req, err := http.NewRequest("POST", "http://localhost:8000/register", bytes.NewBuffer(jsonData))
+	// if err != nil {
+	// 	fmt.Println("Error creating HTTP request:", err)
+	// 	http.Error(w, "Error creating HTTP request", http.StatusInternalServerError)
 	// 	return
 	// }
+
+	// // Set the Content-Type header to application/json.
+	// req.Header.Set("Content-Type", "application/json")
+
+	// // client := &http.Client{}
+	// // resp, err := client.Do(req)
+	// // if err != nil {
+	// // 	fmt.Println("Error sending HTTP request:", err)
+	// // 	http.Error(w, "Error sending HTTP request", http.StatusInternalServerError)
+	// // 	return
+	// // }
+	// // defer resp.Body.Close()
+
+	// // if resp.StatusCode != http.StatusOK {
+	// // 	http.Error(w, "Error registering user", resp.StatusCode)
+	// // 	return
+	// // }
 
 	// Redirect to the login page after successful registration
-	http.Redirect(w, r, "/login", http.StatusSeeOther)
+	//http.Redirect(w, r, "/login", http.StatusSeeOther)
+}
+
+// fetchForUserRegisterAsync
+func fetchForUserRegisterAsync(credentials models.Credentials, errChan chan error) {
+	
+	// Marshal the user object to JSON.
+	jsonData, err := json.Marshal(credentials)
+	if err != nil {
+		fmt.Println("Error marshaling JSON:", err)
+		errChan <- fmt.Errorf("error marshaling credentials: %w", err)
+		close(errChan)
+		return
+	}
+
+	fmt.Printf("jsonData: %s\n", jsonData)
+
+	// Define the POST request
+	url := "http://localhost:8080/register"
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		errChan <- fmt.Errorf("error creating request: %w", err)
+		close(errChan)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send the POST request
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		errChan <- fmt.Errorf("error sending request: %w", err)
+		close(errChan)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Check response status
+	if resp.StatusCode != http.StatusOK {
+		errChan <- fmt.Errorf("received non-OK response status: %s", resp.Status)
+		close(errChan)
+		return
+	}
+
+	fmt.Printf("response: %v\n", resp.StatusCode)
 }
 
 // // Login displays the login page.
