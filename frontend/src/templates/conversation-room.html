@@ -154,7 +154,11 @@
         </div>
         <div class="main-content">
             <h1>Conversation Room</h1>
-            <div id="messages"></div>
+            <div id="messages">
+                {{range .Messages}}
+                <p>{{.Content}}</p>
+                {{end}}
+            </div>
             <form id="messageForm" method="POST" action="/conversation-room?room_id={{.RoomID}}">
                 <input type="text" id="content" name="content" placeholder="Message" required>
                 <button type="submit">Send</button>

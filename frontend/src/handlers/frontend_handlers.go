@@ -107,8 +107,6 @@ func fetchForUserRegisterAsync(credentials models.Credentials, wg *sync.WaitGrou
 		return
 	}
 
-	fmt.Printf("jsonData: %s\n", jsonData)
-
 	// Define the POST request
 	url := "http://localhost:8080/register"
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
@@ -223,8 +221,17 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	case response := <-respChan:
 		authToken = response.Token
 		if response.Success {
-			// Redirect to the conversation room after successful login
-			http.Redirect(w, r, "/conversation-room", http.StatusSeeOther)
+			// Extract room_id query parameter
+			roomID := r.URL.Query().Get("room_id")
+			if roomID == "" {
+				roomID = "channel1" // Set a default room ID if not provided
+    		}
+
+			// Redirect to the specific conversation room after successful login
+			redirectURL := fmt.Sprintf("/conversation-room?room_id=%s", roomID)
+			http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+			// // Redirect to the conversation room after successful login
+			// http.Redirect(w, r, "/conversation-room", http.StatusSeeOther)
 		} else {
 			// Log the failure reason
 			log.Printf("Login failed: %s", response.Message)
@@ -354,37 +361,68 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 // ConversationRoom handles the conversation room.
 func ConversationRoom(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		// http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		// Render the conversation-room form HTML
-		RenderTemplate(w, "conversation-room.html", nil)
+        // Extract room_id query parameter
+        roomID := r.URL.Query().Get("room_id")
+        if roomID == "" {
+            http.Error(w, "Missing room_id", http.StatusBadRequest)
+            return
+        }
+
+		conversationsLock.Lock()
+		messages := conversations[roomID]
+		conversationsLock.Unlock()
+
+        // Render the conversation-room form HTML
+        data := struct {
+            RoomID string
+			Messages []models.Message
+        }{
+            RoomID: roomID,
+			Messages: messages,
+        }
+        RenderTemplate(w, "conversation-room.html", data)
 		return
 	} else if r.Method == http.MethodPost {
 
-		// Check Content-Type header
-		contentType := r.Header.Get("Content-Type")
-		if contentType != "application/json" {
-			http.Error(w, "Content-Type header must be application/json", http.StatusUnsupportedMediaType)
+		// Extract Message from form values
+		content := r.FormValue("content")
+
+		// Sample Message
+		comment := models.Message {
+			Content:  content,
+		}
+
+		respChan := make(chan models.ResponseDetails, 1)
+
+		// Marshal the user object to JSON.
+		jsonData, err := json.Marshal(comment)
+		if err != nil {
+			respChan <- models.ResponseDetails{
+				Success: false,
+				Message: fmt.Sprintf("error marshaling credentials: %v", err),
+			}
 			return
 		}
 
-		var message models.Message
-		if err := json.NewDecoder(r.Body).Decode(&message); err != nil {
-			log.Printf("Error decoding JSON: %v", err)
-			http.Error(w, "Failed to decode request body", http.StatusBadRequest)
-			return
-		}
+		fmt.Printf("jsonData: %s\n", jsonData)
 
 		roomID := r.URL.Query().Get("room_id")
+		fmt.Printf("r.URL: %s\n", r.URL)
+		fmt.Printf("room_id: %s\n", roomID)
 		if roomID == "" {
 			http.Error(w, "Missing room_id", http.StatusBadRequest)
 			return
 		}
 
+		fmt.Printf("after roomID: %s\n", roomID)
+
 		conversationsLock.Lock()
-		conversations[roomID] = append(conversations[roomID], message)
+		conversations[roomID] = append(conversations[roomID], comment)
 		conversationsLock.Unlock()
 
-		w.WriteHeader(http.StatusCreated)
+		// Redirect to the same conversation room to display the updated conversation
+		redirectURL := fmt.Sprintf("/conversation-room?room_id=%s", roomID)
+		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 	} else {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 	}
