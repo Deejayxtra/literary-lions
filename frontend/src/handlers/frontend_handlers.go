@@ -361,60 +361,41 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 // ConversationRoom handles the conversation room.
 func ConversationRoom(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-        // Extract room_id query parameter
-        roomID := r.URL.Query().Get("room_id")
-        if roomID == "" {
-            http.Error(w, "Missing room_id", http.StatusBadRequest)
-            return
-        }
-
-		conversationsLock.Lock()
-		messages := conversations[roomID]
-		conversationsLock.Unlock()
-
-        // Render the conversation-room form HTML
-        data := struct {
-            RoomID string
-			Messages []models.Message
-        }{
-            RoomID: roomID,
-			Messages: messages,
-        }
-        RenderTemplate(w, "conversation-room.html", data)
-		return
-	} else if r.Method == http.MethodPost {
-
-		// Extract Message from form values
-		content := r.FormValue("content")
-
-		// Sample Message
-		comment := models.Message {
-			Content:  content,
-		}
-
-		respChan := make(chan models.ResponseDetails, 1)
-
-		// Marshal the user object to JSON.
-		jsonData, err := json.Marshal(comment)
-		if err != nil {
-			respChan <- models.ResponseDetails{
-				Success: false,
-				Message: fmt.Sprintf("error marshaling credentials: %v", err),
-			}
-			return
-		}
-
-		fmt.Printf("jsonData: %s\n", jsonData)
-
 		roomID := r.URL.Query().Get("room_id")
-		fmt.Printf("r.URL: %s\n", r.URL)
-		fmt.Printf("room_id: %s\n", roomID)
 		if roomID == "" {
 			http.Error(w, "Missing room_id", http.StatusBadRequest)
 			return
 		}
 
-		fmt.Printf("after roomID: %s\n", roomID)
+		conversationsLock.Lock()
+		messages := conversations[roomID]
+		conversationsLock.Unlock()
+
+		data := struct {
+			RoomID   string
+			RoomName string
+			Messages []models.Message
+		}{
+			RoomID:   roomID,
+			RoomName: getRoomName(roomID), // Function to get the room name based on roomID
+			Messages: messages,
+		}
+		RenderTemplate(w, "conversation-room.html", data)
+		return
+	} else if r.Method == http.MethodPost {
+		// Extract Message from form values
+		content := r.FormValue("content")
+
+		// Sample Message
+		comment := models.Message{
+			Content: content,
+		}
+
+		roomID := r.URL.Query().Get("room_id")
+		if roomID == "" {
+			http.Error(w, "Missing room_id", http.StatusBadRequest)
+			return
+		}
 
 		conversationsLock.Lock()
 		conversations[roomID] = append(conversations[roomID], comment)
@@ -427,6 +408,25 @@ func ConversationRoom(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 	}
 }
+
+// Helper function to get room name based on roomID
+func getRoomName(roomID string) string {
+	roomNames := map[string]string{
+		"channel1": "General",
+		"channel2": "News",
+		"channel3": "Entertainment",
+		"channel4": "Music",
+		"channel5": "Sports",
+		"channel6": "Random",
+		"user1":    "User 1",
+		"user2":    "User 2",
+	}
+	if name, ok := roomNames[roomID]; ok {
+		return name
+	}
+	return "Unknown Room"
+}
+
 
 // RenderTemplate renders the specified HTML template with optional data.
 func RenderTemplate(w http.ResponseWriter, tmplName string, data interface{}) {

@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <title>Chat Interface</title>
     <style>
+        /* (Styles remain unchanged) */
         body {
             margin: 0;
             font-family: Arial, sans-serif;
@@ -140,8 +141,12 @@
             <div class="sidebar-section">
                 <h3>Channels</h3>
                 <ul id="channels">
-                    <li><a href="/conversation-room?room_id=channel1"># Channel 1</a></li>
-                    <li><a href="/conversation-room?room_id=channel2"># Channel 2</a></li>
+                    <li><a href="/conversation-room?room_id=channel1"># General</a></li>
+                    <li><a href="/conversation-room?room_id=channel2"># News</a></li>
+                    <li><a href="/conversation-room?room_id=channel3"># Entertainment</a></li>
+                    <li><a href="/conversation-room?room_id=channel4"># Music</a></li>
+                    <li><a href="/conversation-room?room_id=channel5"># Sports</a></li>
+                    <li><a href="/conversation-room?room_id=channel6"># Random</a></li>
                 </ul>
             </div>
             <div class="sidebar-section">
@@ -153,7 +158,7 @@
             </div>
         </div>
         <div class="main-content">
-            <h1>Conversation Room</h1>
+            <h1>Conversation Room: {{.RoomName}}</h1>
             <div id="messages">
                 {{range .Messages}}
                 <p>{{.Content}}</p>
