@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"literary-lions/backend/src/internal/models"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -13,14 +14,14 @@ func RegisterUser(db *sql.DB, email, username, password string) error {
 		return err
 	}
 
-	_, err = db.Exec("INSERT INTO users (email, username, password) VALUES (?, ?, ?)", email, username, string(hashedPassword))
+	_, err = db.Exec("INSERT INTO users (email, username, password, role) VALUES (?, ?, ?, 'user')", email, username, string(hashedPassword))
 	return err
 }
 
 func AuthenticateUser(db *sql.DB, email, password string) (models.User, error) {
 	var user models.User
-	row := db.QueryRow("SELECT id, email, username, password FROM users WHERE email = ?", email)
-	err := row.Scan(&user.ID, &user.Email, &user.Username, &user.Password)
+	row := db.QueryRow("SELECT id, email, username, password, role FROM users WHERE email = ?", email)
+	err := row.Scan(&user.ID, &user.Email, &user.Username, &user.Password, &user.Role)
 	if err != nil {
 		return models.User{}, errors.New("user not found")
 	}

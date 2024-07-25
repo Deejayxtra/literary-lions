@@ -1,3 +1,4 @@
+basePath: /
 definitions:
   handlers.Credentials:
     properties:
@@ -8,8 +9,12 @@ definitions:
       username:
         type: string
     type: object
+host: localhost:8080
 info:
   contact: {}
+  description: API documentation for the Gin application.
+  title: Gin API
+  version: "1.0"
 paths:
   /login:
     post:
@@ -174,36 +179,6 @@ paths:
       summary: Update a post by ID
       tags:
       - posts
-  /register:
-    post:
-      consumes:
-      - application/json
-      description: Register a new user with email, username, and password
-      parameters:
-      - description: User credentials
-        in: body
-        name: credentials
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.Credentials'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: User registered successfully
-          schema:
-            type: string
-        "400":
-          description: Invalid request
-          schema:
-            type: string
-        "500":
-          description: Internal server error
-          schema:
-            type: string
-      summary: Register a new user
-      tags:
-      - auth
   /users:
     get:
       description: Get all users
