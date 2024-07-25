@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -9,33 +8,31 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
-	"literary-lions/backend/src/docs"
+	_ "literary-lions/backend/docs" // Import generated docs
+	"literary-lions/backend/src/internal/db"
 	"literary-lions/backend/src/internal/handlers"
 )
 
+// @title Gin API
+// @version 1.0
+// @description API documentation for the Gin application.
+// @host localhost:8080
+// @BasePath /
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
 func main() {
-	// Database connection
-	db, err := sql.Open("sqlite3", "./forum.db")
+	// Initialize the database
+	database, err := db.InitDB() // Renamed variable to avoid shadowing package
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Database initialization failed: %v\n", err)
 	}
-	defer db.Close()
+	defer database.Close()
 
-	err = db.Ping()
-	if err != nil {
-		log.Fatal(err)
-	}
+	// Initialize handlers with the database connection
+	handlers.InitHandlers(database)
 
-	handlers.InitHandlers(db)
-
-	// Swagger documentation
-	docs.SwaggerInfo.Title = "API Documentation"
-	docs.SwaggerInfo.Description = "This is the API documentation for the Gin API."
-	docs.SwaggerInfo.Version = "1.0"
-	docs.SwaggerInfo.Host = "localhost:8080"
-	docs.SwaggerInfo.BasePath = "/"
-	docs.SwaggerInfo.Schemes = []string{"http"}
-
+	// Set up Gin router
 	r := gin.Default()
 
 	// Serve Swagger UI
@@ -44,18 +41,18 @@ func main() {
 	r.POST("/register", handlers.Register)
 	r.POST("/login", handlers.Login)
 
-	api := r.Group("/api", func(c *gin.Context) {
-		c.Next()
-	})
+	api := r.Group("/api")
+	{
+		api.POST("/posts", handlers.IsAuthorized(handlers.CreatePost, "user"))
+		api.PUT("/posts/:id", handlers.IsAuthorized(handlers.UpdatePost, "user"))
+		api.DELETE("/posts/:id", handlers.IsAuthorized(handlers.DeletePost, "user"))
+		api.GET("/posts/:id", handlers.GetPost)
 
-	api.POST("/posts", handlers.IsAuthorized(handlers.CreatePost, "user"))
-	api.PUT("/posts/:id", handlers.IsAuthorized(handlers.UpdatePost, "user"))
-	api.DELETE("/posts/:id", handlers.IsAuthorized(handlers.DeletePost, "user"))
-	api.GET("/posts/:id", handlers.GetPost)
+		api.GET("/users", handlers.IsAuthorized(handlers.GetAllUsers, "admin"))
+		api.DELETE("/users/:id", handlers.IsAuthorized(handlers.DeleteUser, "admin"))
+		api.PUT("/users/:id/role", handlers.IsAuthorized(handlers.UpdateUserRole, "admin"))
+	}
 
-	api.GET("/users", handlers.IsAuthorized(handlers.GetAllUsers, "admin"))
-	api.DELETE("/users/:id", handlers.IsAuthorized(handlers.DeleteUser, "admin"))
-	api.PUT("/users/:id/role", handlers.IsAuthorized(handlers.UpdateUserRole, "admin"))
-
+	// Start server on port 8080
 	r.Run(":8080")
 }
