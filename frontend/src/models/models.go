@@ -18,6 +18,12 @@ type ResponseDetails struct {
 	Message string
 }
 
+type LoginResponse struct {
+	Success bool
+	Token string `json:"token"`
+	Message string
+}
+
 // User struct represents a user in the system.
 type User struct {
 	ID       int    `json:"id"`

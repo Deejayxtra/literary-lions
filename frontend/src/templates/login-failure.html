@@ -56,11 +56,9 @@
 
 <body>
     <div class="login-container">
-        <h1>Login</h1>
-        <form method="POST" action="/login-handler">
-            <input type="email" name="email" placeholder="Email" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Login</button>
+        <h1>{{.Message}}</h1>
+        <form method="GET" action="/login">
+            <button type="submit">Retry Login</button>
         </form>
     </div>
 </body>

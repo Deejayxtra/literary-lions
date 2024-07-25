@@ -15,3 +15,9 @@ http://localhost:8080/swagger/index.html
 You can see the swagger UI on: http://localhost:8080/swagger/index.html
 
 
+Note:
+Handler => Register func
+if err := auth.RegisterUser(db, creds.Email, creds.Username, creds.Password); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Registration failed"})           # Define error message explicitly
+		return
+	}

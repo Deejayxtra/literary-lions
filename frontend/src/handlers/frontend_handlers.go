@@ -19,6 +19,8 @@ var (
 	conversationsLock = sync.RWMutex{}
 )
 
+var authToken string // Need to work on how and where to keep the token
+
 // HomeHandler handles the home page request.
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	RenderTemplate(w, "index.html", nil)
@@ -115,9 +117,6 @@ func fetchForUserRegisterAsync(credentials models.Credentials, wg *sync.WaitGrou
 			Success: false,
 			Message: fmt.Sprintf("error creating request: %v", err),
 		}
-		// fmt.Println("Error creating request: \n", err)
-		// errChan <- fmt.Errorf("error creating request: %w", err)
-		// close(errChan)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -146,9 +145,22 @@ func fetchForUserRegisterAsync(credentials models.Credentials, wg *sync.WaitGrou
 
 	// Check response status code
 	if resp.StatusCode != http.StatusOK {
+		// Attempt to parse the error message from the response
+		var errorResponse map[string]interface{}
+		var errorMessage string
+		if err := json.Unmarshal(body, &errorResponse); err != nil {
+			errorMessage = string(body) // Use raw body as fallback
+		} else {
+			if errMsg, exists := errorResponse["error"]; exists {
+				errorMessage = fmt.Sprintf("%v", errMsg)
+			} else {
+				errorMessage = "unknown error"
+			}
+		}
+
 		respChan <- models.ResponseDetails{
 			Success: false,
-			Message: fmt.Sprintf("received non-OK response status: %s, body: %s", resp.Status, string(body)), // Edit response here
+			Message: fmt.Sprintln(errorMessage),
 		}
 		return
 	}
@@ -163,36 +175,21 @@ func fetchForUserRegisterAsync(credentials models.Credentials, wg *sync.WaitGrou
 		return
 	}
 
+	// Extracting the message from the response map
+	message, ok := responseMessage["message"].(string)
+	if !ok {
+		message = "Unexpected response format"
+	}
+
 	respChan <- models.ResponseDetails{
 		Success: true,
-		Message: fmt.Sprintf("User registered successfully. Server response: %v", responseMessage),
+		Message: fmt.Sprintln(message), // displays server response to the user
 	}
-
-	fmt.Println("Response from server:", responseMessage)
-
-	fmt.Printf("response: %v\n", resp.StatusCode)
 }
-
-func SendLoginRequest(email, password string) (*http.Response, error) {
-	loginData := map[string]string{"email": email, "password": password}
-	jsonData, err := json.Marshal(loginData)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling JSON: %w", err)
-	}
-
-	req, err := http.NewRequest("POST", "http://localhost:8000/login-handler", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return nil, fmt.Errorf("error creating HTTP request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	client := &http.Client{}
-	return client.Do(req)
-}
-
 
 // LoginHandler handles user login and redirects to the conversation room.
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFiles("templates/login-failure.html"))
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
@@ -211,7 +208,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Password: password,
 	}
 
-	respChan := make(chan models.ResponseDetails, 1)
+	respChan := make(chan models.LoginResponse, 1)
 	var wg sync.WaitGroup
 	wg.Add(1)
 
@@ -222,22 +219,45 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	close(respChan)
 
 	// Get the response
-	responseDetails := <-respChan
-	fmt.Printf("Login response: %+v\n", responseDetails)
+	select {
+	case response := <-respChan:
+		authToken = response.Token
+		if response.Success {
+			// Redirect to the conversation room after successful login
+			http.Redirect(w, r, "/conversation-room", http.StatusSeeOther)
+		} else {
+			// Log the failure reason
+			log.Printf("Login failed: %s", response.Message)
 
-	// Redirect to the conversation room after successful login
-	http.Redirect(w, r, "/conversation-room", http.StatusSeeOther)
+			// Render the login failure template
+			data := struct {
+				Success bool
+				Message string
+			}{
+				Success: response.Success,
+				Message: response.Message,
+			}
+
+			if err := tmpl.Execute(w, data); err != nil {
+				http.Error(w, "Error rendering template", http.StatusInternalServerError)
+				log.Fatalf("Error rendering template: %v", err)
+			}
+		}
+	case <-time.After(10 * time.Second):
+		fmt.Println("Timeout while processing request")
+	}
+
 }
 
 // fetchForUserLoginAsync
-func fetchForUserLoginAsync(credentials models.Credentials, wg *sync.WaitGroup, respChan chan models.ResponseDetails) {
+func fetchForUserLoginAsync(credentials models.Credentials, wg *sync.WaitGroup, respChan chan models.LoginResponse) {
 
 	defer wg.Done()
 
 	// Convert credentials to JSON
 	jsonData, err := json.Marshal(credentials)
 	if err != nil {
-		respChan <- models.ResponseDetails{
+		respChan <- models.LoginResponse{
 			Success: false,
 			Message: fmt.Sprintf("error marshaling credentials: %v", err),
 		}
@@ -247,7 +267,7 @@ func fetchForUserLoginAsync(credentials models.Credentials, wg *sync.WaitGroup, 
 	// Create a POST request
 	req, err := http.NewRequest(http.MethodPost, "http://localhost:8080/login", bytes.NewBuffer(jsonData))
 	if err != nil {
-		respChan <- models.ResponseDetails{
+		respChan <- models.LoginResponse{
 			Success: false,
 			Message: fmt.Sprintf("error creating request: %v", err),
 		}
@@ -260,7 +280,7 @@ func fetchForUserLoginAsync(credentials models.Credentials, wg *sync.WaitGroup, 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		respChan <- models.ResponseDetails{
+		respChan <- models.LoginResponse{
 			Success: false,
 			Message: fmt.Sprintf("error sending request: %v", err),
 		}
@@ -268,23 +288,53 @@ func fetchForUserLoginAsync(credentials models.Credentials, wg *sync.WaitGroup, 
 	}
 	defer resp.Body.Close()
 
-	// Read the response
-	var responseDetails models.ResponseDetails
-	if err := json.NewDecoder(resp.Body).Decode(&responseDetails); err != nil {
-		respChan <- models.ResponseDetails{
+
+	// Read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		respChan <- models.LoginResponse{
 			Success: false,
-			Message: fmt.Sprintf("error decoding response: %v", err),
+			Message: fmt.Sprintf("error reading response: %v", err),
 		}
 		return
 	}
 
-	// Handle the response
+	// Check response status code
 	if resp.StatusCode != http.StatusOK {
-		responseDetails.Success = false
-		responseDetails.Message = fmt.Sprintf("unexpected status code: %d", resp.StatusCode)
+		// Attempt to parse the error message from the response
+		var errorResponse map[string]interface{}
+		var errorMessage string
+		if err := json.Unmarshal(body, &errorResponse); err != nil {
+			errorMessage = string(body) // Use raw body as fallback
+		} else {
+			if errMsg, exists := errorResponse["error"]; exists {
+				errorMessage = fmt.Sprintf("%v", errMsg)
+			} else {
+				errorMessage = "unknown error"
+			}
+		}
+
+		respChan <- models.LoginResponse{
+			Success: false,
+			Message: fmt.Sprintln(errorMessage),
+		}
+		return
 	}
 
-	respChan <- responseDetails
+	// Optionally, you can further process the response body if needed
+	var responseMessage map[string]interface{}
+	if err := json.Unmarshal(body, &responseMessage); err != nil {
+		respChan <- models.LoginResponse{
+			Success: false,
+			Message: fmt.Sprintf("error unmarshaling response: %v", err),
+		}
+		return
+	}
+
+	respChan <- models.LoginResponse{
+		Success: true,
+		Token: responseMessage["token"].(string), // We need to come back to this and figure out how to keep it for subsequent requests
+	}
 }
 
 
@@ -303,36 +353,41 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 
 // ConversationRoom handles the conversation room.
 func ConversationRoom(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
+	if r.Method == http.MethodGet {
+		// http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		// Render the conversation-room form HTML
+		RenderTemplate(w, "conversation-room.html", nil)
+		return
+	} else if r.Method == http.MethodPost {
+
+		// Check Content-Type header
+		contentType := r.Header.Get("Content-Type")
+		if contentType != "application/json" {
+			http.Error(w, "Content-Type header must be application/json", http.StatusUnsupportedMediaType)
+			return
+		}
+
+		var message models.Message
+		if err := json.NewDecoder(r.Body).Decode(&message); err != nil {
+			log.Printf("Error decoding JSON: %v", err)
+			http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+			return
+		}
+
+		roomID := r.URL.Query().Get("room_id")
+		if roomID == "" {
+			http.Error(w, "Missing room_id", http.StatusBadRequest)
+			return
+		}
+
+		conversationsLock.Lock()
+		conversations[roomID] = append(conversations[roomID], message)
+		conversationsLock.Unlock()
+
+		w.WriteHeader(http.StatusCreated)
+	} else {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
 	}
-
-	// Check Content-Type header
-	contentType := r.Header.Get("Content-Type")
-	if contentType != "application/json" {
-		http.Error(w, "Content-Type header must be application/json", http.StatusUnsupportedMediaType)
-		return
-	}
-
-	var message models.Message
-	if err := json.NewDecoder(r.Body).Decode(&message); err != nil {
-		log.Printf("Error decoding JSON: %v", err)
-		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
-		return
-	}
-
-	roomID := r.URL.Query().Get("room_id")
-	if roomID == "" {
-		http.Error(w, "Missing room_id", http.StatusBadRequest)
-		return
-	}
-
-	conversationsLock.Lock()
-	conversations[roomID] = append(conversations[roomID], message)
-	conversationsLock.Unlock()
-
-	w.WriteHeader(http.StatusCreated)
 }
 
 // RenderTemplate renders the specified HTML template with optional data.
