@@ -418,8 +418,6 @@ func getRoomName(roomID string) string {
 		"channel4": "Music",
 		"channel5": "Sports",
 		"channel6": "Random",
-		"user1":    "User 1",
-		"user2":    "User 2",
 	}
 	if name, ok := roomNames[roomID]; ok {
 		return name
