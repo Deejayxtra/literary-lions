@@ -723,7 +723,8 @@ func Register(c *gin.Context) {
 	}
 
 	if err := auth.RegisterUser(db, req.Email, req.Username, req.Password); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Registration failed"})
+		// c.JSON(http.StatusInternalServerError, gin.H{"error": "Registration failed"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
