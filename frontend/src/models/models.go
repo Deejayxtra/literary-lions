@@ -3,13 +3,12 @@ package models
 import (
 	"errors"
 	"time"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
-
 type Credentials struct {
 	Email    string `json:"email"`
-	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
@@ -20,7 +19,7 @@ type ResponseDetails struct {
 
 type LoginResponse struct {
 	Success bool
-	Token string `json:"token"`
+	Token   string `json:"token"`
 	Message string
 }
 
@@ -69,8 +68,8 @@ type Like struct {
 
 // Message struct represents a message in a conversation room.
 type Message struct {
-	UserID  int    `json:"user_id"`
-	Content string `json:"content"`
+	UserID  int       `json:"user_id"`
+	Content string    `json:"content"`
 	Time    time.Time `json:"time"`
 }
 

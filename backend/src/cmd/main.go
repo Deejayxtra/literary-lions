@@ -8,7 +8,7 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
-	_ "literary-lions/backend/docs" // Import generated docs
+	_ "literary-lions/backend/docs"
 	"literary-lions/backend/src/internal/db"
 	"literary-lions/backend/src/internal/handlers"
 )
@@ -21,9 +21,46 @@ import (
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header
 // @name Authorization
+// func main() {
+// 	// Initialize the database
+// 	database, err := db.InitDB() // Renamed variable to avoid shadowing package
+// 	if err != nil {
+// 		log.Fatalf("Database initialization failed: %v\n", err)
+// 	}
+// 	defer database.Close()
+
+// 	// Initialize handlers with the database connection
+// 	handlers.InitHandlers(database)
+
+// 	// Set up Gin router
+// 	r := gin.Default()
+
+// 	// Serve Swagger UI
+// 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+// 	r.POST("/register", handlers.Register)
+// 	r.POST("/login", handlers.Login)
+
+// 	api := r.Group("/api")
+// 	{
+// 		api.POST("/posts", handlers.IsAuthorized(handlers.CreatePost, "user"))
+// 		api.PUT("/posts/:id", handlers.IsAuthorized(handlers.UpdatePost, "user"))
+// 		api.DELETE("/posts/:id", handlers.IsAuthorized(handlers.DeletePost, "user"))
+// 		api.GET("/posts/:id", handlers.GetPost)
+
+// 		api.GET("/users", handlers.IsAuthorized(handlers.GetAllUsers, "admin"))
+// 		api.DELETE("/users/:id", handlers.IsAuthorized(handlers.DeleteUser, "admin"))
+// 		api.PUT("/users/:id/role", handlers.IsAuthorized(handlers.UpdateUserRole, "admin"))
+// 	}
+
+// 	// Start server on port 8080
+// 	r.Run(":8080")
+// }
+
 func main() {
 	// Initialize the database
-	database, err := db.InitDB() // Renamed variable to avoid shadowing package
+	// database, err := db.InitDB()
+	database, err := db.InitDB()
 	if err != nil {
 		log.Fatalf("Database initialization failed: %v\n", err)
 	}
@@ -41,16 +78,28 @@ func main() {
 	r.POST("/register", handlers.Register)
 	r.POST("/login", handlers.Login)
 
-	api := r.Group("/api")
-	{
-		api.POST("/posts", handlers.IsAuthorized(handlers.CreatePost, "user"))
-		api.PUT("/posts/:id", handlers.IsAuthorized(handlers.UpdatePost, "user"))
-		api.DELETE("/posts/:id", handlers.IsAuthorized(handlers.DeletePost, "user"))
-		api.GET("/posts/:id", handlers.GetPost)
+	// api := r.Group("/api")
+	// {
+	// 	api.POST("/posts", handlers.IsAuthorized(handlers.CreatePost, "user"))
+	// 	api.PUT("/posts/:id", handlers.IsAuthorized(handlers.UpdatePost, "user"))
+	// 	api.DELETE("/posts/:id", handlers.IsAuthorized(handlers.DeletePost, "user"))
+	// 	api.GET("/posts/:id", handlers.GetPost)
 
-		api.GET("/users", handlers.IsAuthorized(handlers.GetAllUsers, "admin"))
-		api.DELETE("/users/:id", handlers.IsAuthorized(handlers.DeleteUser, "admin"))
-		api.PUT("/users/:id/role", handlers.IsAuthorized(handlers.UpdateUserRole, "admin"))
+	// 	api.GET("/users", handlers.IsAuthorized(handlers.GetAllUsers, "admin"))
+	// 	api.DELETE("/users/:id", handlers.IsAuthorized(handlers.DeleteUser, "admin"))
+	// 	api.PUT("/users/:id/role", handlers.IsAuthorized(handlers.UpdateUserRole, "admin"))
+	// }
+	// Authorization middleware setup
+	api := r.Group("/api")
+	api.Use(handlers.AuthMiddleware("user")) // Apply middleware to the group
+
+	{
+		api.GET("/users", handlers.GetAllUsers) // Apply middleware based on role in the function
+		api.GET("/posts", handlers.GetAllPosts)
+		api.POST("/posts", handlers.CreatePost)
+		api.GET("/posts/:id", handlers.GetPost)
+		api.PUT("/posts/:id", handlers.UpdatePost)
+		api.DELETE("/posts/:id", handlers.DeletePost)
 	}
 
 	// Start server on port 8080
