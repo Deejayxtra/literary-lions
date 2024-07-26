@@ -13,6 +13,7 @@
             align-items: center;
             height: 100vh;
             margin: 0;
+            flex-direction: column;
         }
 
         .login-container {
@@ -20,6 +21,8 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            box-sizing: border-box;
         }
 
         .login-container h1 {
@@ -49,19 +52,61 @@
         }
 
         .login-container form button:hover {
+            background-color: #555;
+        }
+
+        header {
+            width: 100%;
             background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 1em 0;
+            position: fixed;
+            top: 0;
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        nav {
+            margin-top: 10px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        .content {
+            margin-top: 100px;
+            /* To avoid overlap with the fixed header */
         }
     </style>
 </head>
 
 <body>
-    <div class="login-container">
-        <h1>Login</h1>
-        <form method="POST" action="/login-handler">
-            <input type="email" name="email" placeholder="Email" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Login</button>
-        </form>
+    <header>
+        <h1>Literary Lions Forum</h1>
+        <nav>
+            <a href="/">Home</a>
+        </nav>
+    </header>
+    <div class="content">
+        <div class="login-container">
+            <h1>Login</h1>
+            <form method="POST" action="/login-handler">
+                <input type="email" name="email" placeholder="Email" required>
+                <input type="password" name="password" placeholder="Password" required>
+                <button type="submit">Login</button>
+            </form>
+        </div>
     </div>
 </body>
 

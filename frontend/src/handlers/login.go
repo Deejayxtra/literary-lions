@@ -151,6 +151,8 @@ func FetchForUserLoginAsync(credentials models.Credentials, wg *sync.WaitGroup, 
 				errorMessage = "unknown error"
 			}
 		}
+		
+		fmt.Printf("error response: %v", errorMessage)
 
 		respChan <- models.LoginResponse{
 			Success: false,
