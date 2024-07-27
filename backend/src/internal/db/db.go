@@ -126,19 +126,21 @@ func createTables(db *sql.DB) {
             password TEXT NOT NULL,
             role TEXT NOT NULL CHECK (role IN ('user', 'admin'))
         )`,
-		`CREATE TABLE IF NOT EXISTS categories (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE
-        )`,
+		`CREATE TABLE IF NOT EXISTS sessions (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
+			token TEXT NOT NULL,
+			expires_at DATETIME NOT NULL,
+			FOREIGN KEY (user_id) REFERENCES users(id)
+		)`,
 		`CREATE TABLE IF NOT EXISTS posts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
-            category_id INTEGER,
+    		category TEXT,
             title TEXT NOT NULL,
             content TEXT NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id),
-            FOREIGN KEY (category_id) REFERENCES categories(id)
+            FOREIGN KEY (user_id) REFERENCES users(id)
         )`,
 		`CREATE TABLE IF NOT EXISTS comments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -150,14 +152,15 @@ func createTables(db *sql.DB) {
             FOREIGN KEY (user_id) REFERENCES users(id)
         )`,
 		`CREATE TABLE IF NOT EXISTS likes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            post_id INTEGER,
-            comment_id INTEGER,
-            user_id INTEGER NOT NULL,
-            is_like BOOLEAN NOT NULL,
-            FOREIGN KEY (post_id) REFERENCES posts(id),
-            FOREIGN KEY (comment_id) REFERENCES comments(id),
-            UNIQUE (user_id, post_id, comment_id)
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
+			post_id INTEGER,
+			comment_id INTEGER,
+			is_like BOOLEAN NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (user_id) REFERENCES users(id),
+			FOREIGN KEY (post_id) REFERENCES posts(id),
+			FOREIGN KEY (comment_id) REFERENCES comments(id)
         )`,
 	}
 
