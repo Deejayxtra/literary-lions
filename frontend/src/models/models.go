@@ -18,7 +18,7 @@ type ResponseDetails struct {
 	Message string
 }
 
-type LoginResponse struct {
+type AuthResponse struct {
 	Success bool
 	Token 	string `json:"token"`
 	Message string

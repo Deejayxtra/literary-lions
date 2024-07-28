@@ -37,11 +37,11 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Password: password,
 	}
 
-	respChan := make(chan models.LoginResponse, 1)
+	respChan := make(chan models.AuthResponse, 1)
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	go FetchForUserLoginAsync(credentials, &wg, respChan)
+	go SendLoginRequest(credentials, &wg, respChan)
 
 	// Wait for the goroutine to finish
 	wg.Wait()
@@ -87,15 +87,15 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// FetchForUserLoginAsync
-func FetchForUserLoginAsync(credentials models.Credentials, wg *sync.WaitGroup, respChan chan models.LoginResponse) {
+// SendLoginRequest
+func SendLoginRequest(credentials models.Credentials, wg *sync.WaitGroup, respChan chan models.AuthResponse) {
 
 	defer wg.Done()
 
 	// Convert credentials to JSON
 	jsonData, err := json.Marshal(credentials)
 	if err != nil {
-		respChan <- models.LoginResponse{
+		respChan <- models.AuthResponse{
 			Success: false,
 			Message: fmt.Sprintf("error marshaling credentials: %v", err),
 		}
@@ -105,7 +105,7 @@ func FetchForUserLoginAsync(credentials models.Credentials, wg *sync.WaitGroup, 
 	// Create a POST request
 	req, err := http.NewRequest(http.MethodPost, "http://localhost:8080/login", bytes.NewBuffer(jsonData))
 	if err != nil {
-		respChan <- models.LoginResponse{
+		respChan <- models.AuthResponse{
 			Success: false,
 			Message: fmt.Sprintf("error creating request: %v", err),
 		}
@@ -118,7 +118,7 @@ func FetchForUserLoginAsync(credentials models.Credentials, wg *sync.WaitGroup, 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		respChan <- models.LoginResponse{
+		respChan <- models.AuthResponse{
 			Success: false,
 			Message: fmt.Sprintf("error sending request: %v", err),
 		}
@@ -130,7 +130,7 @@ func FetchForUserLoginAsync(credentials models.Credentials, wg *sync.WaitGroup, 
 	// Read the response body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		respChan <- models.LoginResponse{
+		respChan <- models.AuthResponse{
 			Success: false,
 			Message: fmt.Sprintf("error reading response: %v", err),
 		}
@@ -154,7 +154,7 @@ func FetchForUserLoginAsync(credentials models.Credentials, wg *sync.WaitGroup, 
 		
 		fmt.Printf("error response: %v", errorMessage)
 
-		respChan <- models.LoginResponse{
+		respChan <- models.AuthResponse{
 			Success: false,
 			Message: fmt.Sprintln(errorMessage),
 		}
@@ -164,14 +164,14 @@ func FetchForUserLoginAsync(credentials models.Credentials, wg *sync.WaitGroup, 
 	// Optionally, you can further process the response body if needed
 	var responseMessage map[string]interface{}
 	if err := json.Unmarshal(body, &responseMessage); err != nil {
-		respChan <- models.LoginResponse{
+		respChan <- models.AuthResponse{
 			Success: false,
 			Message: fmt.Sprintf("error unmarshaling response: %v", err),
 		}
 		return
 	}
 
-	respChan <- models.LoginResponse{
+	respChan <- models.AuthResponse{
 		Success: true,
 		Token: responseMessage["token"].(string), // We need to come back to this and figure out how to keep it for subsequent requests
 	}

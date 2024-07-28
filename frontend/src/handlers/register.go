@@ -43,7 +43,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 		wg.Add(1)
 		go func() {
-			FetchForUserRegisterAsync(credentials, &wg, respChan)
+			SendRegistrationRequest(credentials, &wg, respChan)
 		}()
 
 		// Wait for the goroutine to finish
@@ -81,8 +81,8 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// FetchForUserRegisterAsync
-func FetchForUserRegisterAsync(credentials models.Credentials, wg *sync.WaitGroup, respChan chan models.ResponseDetails) {
+// SendRegistrationRequest
+func SendRegistrationRequest(credentials models.Credentials, wg *sync.WaitGroup, respChan chan models.ResponseDetails) {
 
 	defer wg.Done() // Notify the wait group when this goroutine completes
 	
