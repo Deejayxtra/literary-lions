@@ -22,45 +22,8 @@ import (
 // @in header
 // @name Authorization
 
-// func main() {
-// 	// Initialize the database
-// 	database, err := db.InitDB() // Renamed variable to avoid shadowing package
-// 	if err != nil {
-// 		log.Fatalf("Database initialization failed: %v\n", err)
-// 	}
-// 	defer database.Close()
-
-// 	// Initialize handlers with the database connection
-// 	handlers.InitHandlers(database)
-
-// 	// Set up Gin router
-// 	r := gin.Default()
-
-// 	// Serve Swagger UI
-// 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
-// 	r.POST("/register", handlers.Register)
-// 	r.POST("/login", handlers.Login)
-
-// 	api := r.Group("/api")
-// 	{
-// 		api.POST("/posts", handlers.IsAuthorized(handlers.CreatePost, "user"))
-// 		api.PUT("/posts/:id", handlers.IsAuthorized(handlers.UpdatePost, "user"))
-// 		api.DELETE("/posts/:id", handlers.IsAuthorized(handlers.DeletePost, "user"))
-// 		api.GET("/posts/:id", handlers.GetPost)
-
-// 		api.GET("/users", handlers.IsAuthorized(handlers.GetAllUsers, "admin"))
-// 		api.DELETE("/users/:id", handlers.IsAuthorized(handlers.DeleteUser, "admin"))
-// 		api.PUT("/users/:id/role", handlers.IsAuthorized(handlers.UpdateUserRole, "admin"))
-// 	}
-
-// 	// Start server on port 8080
-// 	r.Run(":8080")
-// }
-
 func main() {
 	// Initialize the database
-	// database, err := db.InitDB()
 	database, err := db.InitDB()
 	if err != nil {
 		log.Fatalf("Database initialization failed: %v\n", err)
@@ -76,23 +39,36 @@ func main() {
 	// Serve Swagger UI
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-    // Public routes
-    r.POST("/register", handlers.Register)
-    r.POST("/login", handlers.Login)
+	// Public routes
+	r.POST("/register", handlers.Register)
+	r.POST("/login", handlers.Login)
 	r.POST("/logout", handlers.Logout)
 
 	api := r.Group("/api")
 	api.GET("/posts", handlers.GetAllPosts)
+
 	// Authorization middleware setup
 	api.Use(handlers.AuthMiddleware("user")) // Apply middleware to the group
 
 	{
-		api.GET("/users", handlers.GetAllUsers) // Apply middleware based on role in the function
-		api.POST("/post/:id/comment", handlers.AddComment)
-		api.POST("/post", handlers.CreatePost)
-		api.GET("/post/:id", handlers.GetPostByID)
-		api.PUT("/post/:id", handlers.UpdatePost)
-		api.DELETE("/post/:id", handlers.DeletePost)
+		api.GET("/users", handlers.GetAllUsers)            // Apply middleware based on role in the function
+		api.POST("/post", handlers.CreatePost)             // Create a new post
+		api.GET("/post/:id", handlers.GetPostByID)         // Get a specific post by ID
+		api.PUT("/post/:id", handlers.UpdatePost)          // Update a specific post by ID
+		api.DELETE("/post/:id", handlers.DeletePost)       // Delete a specific post by ID
+		api.POST("/post/:id/comment", handlers.AddComment) // Add a comment to a specific post by ID
+
+		// Likes and dislikes for posts
+		api.POST("/post/:id/like", handlers.LikePost)             // Like a specific post by ID
+		api.POST("/post/:id/dislike", handlers.DislikePost)       // Dislike a specific post by ID
+		api.DELETE("/post/:id/unlike", handlers.UnlikePost)       // Unlike a specific post by ID
+		api.DELETE("/post/:id/undislike", handlers.UndislikePost) // Remove dislike from a specific post by ID
+
+		// Likes and dislikes for comments
+		api.POST("/comment/:id/like", handlers.LikeComment)             // Like a specific comment by ID
+		api.POST("/comment/:id/dislike", handlers.DislikeComment)       // Dislike a specific comment by ID
+		api.DELETE("/comment/:id/unlike", handlers.UnlikeComment)       // Unlike a specific comment by ID
+		api.DELETE("/comment/:id/undislike", handlers.UndislikeComment) // Remove dislike from a specific comment by ID
 	}
 
 	// Start server on port 8080
