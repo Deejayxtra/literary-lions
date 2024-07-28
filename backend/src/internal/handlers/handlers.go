@@ -236,6 +236,7 @@ func UpdateUser(c *gin.Context) {
 }
 
 // DeleteUser godoc
+
 // @Summary Delete a user
 // @Description Delete a user
 // @Tags users
@@ -268,6 +269,7 @@ func DeleteUser(c *gin.Context) {
 }
 
 // UpdateUserRole godoc
+
 // @Summary Update a user's role
 // @Description Update a user's role by ID
 // @Tags users
