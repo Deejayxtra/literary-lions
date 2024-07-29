@@ -1,82 +1,80 @@
 package handlers
 
 import (
-	// "bytes"
-	// "encoding/json"
-	"fmt"
-	// "html/template"
-	// "log"
-	"net/http"
-	// "sync"
-	// "time"
-	// "io/ioutil"
-
-	"literary-lions/frontend/src/models"
+    "fmt"
+    "net/http"
+    "literary-lions/frontend/src/models"
 )
 
 // ConversationRoom handles the conversation room.
 func ConversationRoom(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		roomID := r.URL.Query().Get("room_id")
-		if roomID == "" {
-			http.Error(w, "Missing room_id", http.StatusBadRequest)
-			return
-		}
+    if r.Method == http.MethodGet {
+        roomID := r.URL.Query().Get("room_id")
+        if roomID == "" {
+            http.Error(w, "Missing room_id", http.StatusBadRequest)
+            return
+        }
 
-		conversationsLock.Lock()
-		messages := conversations[roomID]
-		conversationsLock.Unlock()
+        respChan := make(chan models.Data)
+        go ShowPosts(w, r, respChan)
 
-		data := struct {
-			RoomID   string
-			RoomName string
-			Messages []models.Message
-		}{
-			RoomID:   roomID,
-			RoomName: getRoomName(roomID), // Function to get the room name based on roomID
-			Messages: messages,
-		}
-		RenderTemplate(w, "conversation-room.html", data)
-		return
-	} else if r.Method == http.MethodPost {
-		// Extract Message from form values
-		content := r.FormValue("content")
+        // Retrieve posts from the channel
+        responseDetails := <-respChan
+        // fmt.Println("responseDetails:", responseDetails)
+        // fmt.Println("Response:", responseDetails.Posts)
 
-		// Sample Message
-		comment := models.Message{
-			Content: content,
-		}
+        data := struct {
+            RoomID   string
+            RoomName string
+            Messages []models.Message
+        }{
+            RoomID:   roomID,
+            RoomName: getRoomName(roomID), // Function to get the room name based on roomID
+            Messages: responseDetails.Posts,
+        }
+        RenderTemplate(w, "conversation-room.html", data)
+        return
+    } else if r.Method == http.MethodPost {
+        // Extract Message from form values
+        content := r.FormValue("content")
+        title := r.FormValue("title")
 
-		roomID := r.URL.Query().Get("room_id")
-		if roomID == "" {
-			http.Error(w, "Missing room_id", http.StatusBadRequest)
-			return
-		}
+        // Sample Message
+        comment := models.Message{
+            Title:   title,
+            Content: content,
+        }
 
-		conversationsLock.Lock()
-		conversations[roomID] = append(conversations[roomID], comment)
-		conversationsLock.Unlock()
+        roomID := r.URL.Query().Get("room_id")
+        if roomID == "" {
+            http.Error(w, "Missing room_id", http.StatusBadRequest)
+            return
+        }
 
-		// Redirect to the same conversation room to display the updated conversation
-		redirectURL := fmt.Sprintf("/conversation-room?room_id=%s", roomID)
-		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
-	} else {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-	}
+        conversationsLock.Lock()
+        conversations[roomID] = append(conversations[roomID], comment)
+        conversationsLock.Unlock()
+
+        // Redirect to the same conversation room to display the updated conversation
+        redirectURL := fmt.Sprintf("/conversation-room?room_id=%s", roomID)
+        http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+    } else {
+        http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+    }
 }
 
 // Helper function to get room name based on roomID
 func getRoomName(roomID string) string {
-	roomNames := map[string]string{
-		"channel1": "General",
-		"channel2": "News",
-		"channel3": "Entertainment",
-		"channel4": "Music",
-		"channel5": "Sports",
-		"channel6": "Random",
-	}
-	if name, ok := roomNames[roomID]; ok {
-		return name
-	}
-	return "Unknown Room"
+    roomNames := map[string]string{
+        "category1": "Recent Posts",
+        "category2": "News",
+        "category3": "Entertainment",
+        "category4": "Music",
+        "category5": "Sports",
+        "category6": "General",
+    }
+    if name, ok := roomNames[roomID]; ok {
+        return name
+    }
+    return "Unknown Room"
 }

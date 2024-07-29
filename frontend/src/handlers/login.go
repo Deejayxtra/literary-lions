@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"sync"
 	"time"
-	"io/ioutil"
 
 	"literary-lions/frontend/src/models"
 )
@@ -28,11 +28,8 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 
-	// Print credentials for debugging
-	fmt.Printf("Credentials: email=%s, password=%s\n", email, password)
-
 	// Sample credentials
-	credentials := models.Credentials {
+	credentials := models.Credentials{
 		Email:    email,
 		Password: password,
 	}
@@ -55,8 +52,8 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			// Extract room_id query parameter
 			roomID := r.URL.Query().Get("room_id")
 			if roomID == "" {
-				roomID = "channel1" // Set a default room ID if not provided
-    		}
+				roomID = "category1" // Set a default room ID if not provided
+			}
 
 			// Redirect to the specific conversation room after successful login
 			redirectURL := fmt.Sprintf("/conversation-room?room_id=%s", roomID)
@@ -126,7 +123,6 @@ func SendLoginRequest(credentials models.Credentials, wg *sync.WaitGroup, respCh
 	}
 	defer resp.Body.Close()
 
-
 	// Read the response body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -151,7 +147,7 @@ func SendLoginRequest(credentials models.Credentials, wg *sync.WaitGroup, respCh
 				errorMessage = "unknown error"
 			}
 		}
-		
+
 		fmt.Printf("error response: %v", errorMessage)
 
 		respChan <- models.AuthResponse{
@@ -173,6 +169,6 @@ func SendLoginRequest(credentials models.Credentials, wg *sync.WaitGroup, respCh
 
 	respChan <- models.AuthResponse{
 		Success: true,
-		Token: responseMessage["token"].(string), // We need to come back to this and figure out how to keep it for subsequent requests
+		Token:   responseMessage["token"].(string), // We need to come back to this and figure out how to keep it for subsequent requests
 	}
 }

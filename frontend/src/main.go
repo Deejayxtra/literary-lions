@@ -23,6 +23,8 @@ func main() {
    // http.HandleFunc("/post-comment", handlers.PostComment)
    // http.HandleFunc("/create-channel", handlers.CreateChannel)
     http.HandleFunc("/conversation-room", handlers.ConversationRoom)
+    //http.HandleFunc("/conversation-room", handlers.ShowPosts)
+    http.HandleFunc("/create-post", handlers.CreatePost)
 
     // Start the server
     log.Println("Server started on :8000")

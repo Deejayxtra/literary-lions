@@ -7,6 +7,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type Data struct{
+	Posts	[]Message
+	Authenticated bool
+}
+
 type Credentials struct {
 	Email    string `json:"email"`
 	Username string `json:"username"`
@@ -43,6 +48,7 @@ type Category struct {
 type Post struct {
 	ID         int       `json:"id"`
 	UserID     int       `json:"user_id"`
+	Category   int       `json:"category"`
 	CategoryID int       `json:"category_id"`
 	Title      string    `json:"title"`
 	Content    string    `json:"content"`
@@ -71,6 +77,8 @@ type Like struct {
 type Message struct {
 	UserID  int       `json:"user_id"`
 	Content string    `json:"content"`
+	Title    string `json:"title"`
+	Category   string       `json:"category"`
 	Time    time.Time `json:"time"`
 }
 
