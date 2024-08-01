@@ -7,11 +7,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type Data struct{
-	Posts	[]Message
-	Authenticated bool
-}
-
 type Credentials struct {
 	Email    string `json:"email"`
 	Username string `json:"username"`
@@ -21,11 +16,12 @@ type Credentials struct {
 type ResponseDetails struct {
 	Success bool
 	Message string
+	Status  int
 }
 
 type AuthResponse struct {
 	Success bool
-	Token 	string `json:"token"`
+	Token   string `json:"token"`
 	Message string
 }
 
@@ -48,17 +44,23 @@ type Category struct {
 type Post struct {
 	ID         int       `json:"id"`
 	UserID     int       `json:"user_id"`
-	Category   int       `json:"category"`
+	Category   string    `json:"category"`
 	CategoryID int       `json:"category_id"`
 	Title      string    `json:"title"`
 	Content    string    `json:"content"`
 	CreatedAt  time.Time `json:"created_at"`
 }
 
+// Post struct represents a post in the forum.
+type PostDetails struct {
+	Post     Post
+	Comments []Comment
+}
+
 // Comment struct represents a comment on a post.
 type Comment struct {
 	ID        int       `json:"id"`
-	PostID    int       `json:"post_id"`
+	PostID    string    `json:"post_id"`
 	UserID    int       `json:"user_id"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
@@ -77,9 +79,13 @@ type Like struct {
 type Message struct {
 	UserID  int       `json:"user_id"`
 	Content string    `json:"content"`
-	Title    string `json:"title"`
-	Category   string       `json:"category"`
 	Time    time.Time `json:"time"`
+}
+
+// Data struct for template.
+type Data struct {
+	Posts         []Post
+	Authenticated bool
 }
 
 // AuthenticateUser simulates user authentication.
