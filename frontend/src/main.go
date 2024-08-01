@@ -1,32 +1,29 @@
 package main
 
 import (
-    "log"
-    "net/http"
-    "literary-lions/frontend/src/handlers"
+	"literary-lions/frontend/src/handlers"
+	"log"
+	"net/http"
 )
 
 func main() {
-    
-    // Define a test route to process a login request
-    http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
-        // Render the login form HTML
-        handlers.RenderTemplate(w, "login.html", nil)
-    })
 
-    // Define your handlers for routes
-    http.HandleFunc("/", handlers.HomeHandler)
-    http.HandleFunc("/register", handlers.Register)
-   	// http.HandleFunc("/login", handlers.Login)
-    http.HandleFunc("/login-handler", handlers.LoginHandler) // New handler for processing login
-    http.HandleFunc("/logout", handlers.Logout)
-   // http.HandleFunc("/post-comment", handlers.PostComment)
-   // http.HandleFunc("/create-channel", handlers.CreateChannel)
-    http.HandleFunc("/conversation-room", handlers.ConversationRoom)
-    //http.HandleFunc("/conversation-room", handlers.ShowPosts)
-    http.HandleFunc("/create-post", handlers.CreatePost)
+	// Define your handlers for routes
 
-    // Start the server
-    log.Println("Server started on :8000")
-    log.Fatal(http.ListenAndServe(":8000", nil))
+	http.HandleFunc("/", handlers.ShowPosts)
+	http.HandleFunc("/posts/category", handlers.ShowPostsByCategory)
+	http.HandleFunc("/post", handlers.ShowPostByID)
+	http.HandleFunc("/comment", handlers.AddComment)
+
+	http.HandleFunc("/register", handlers.Register)
+	http.HandleFunc("/login", handlers.LoginHandler)
+	http.HandleFunc("/logout-handler", handlers.Logout)
+	http.HandleFunc("/create-post", handlers.CreatePost)
+	http.HandleFunc("/conversation-room", handlers.ConversationRoom)
+
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+
+	// Start the server
+	log.Println("Server started on :8000")
+	log.Fatal(http.ListenAndServe(":8000", nil))
 }
