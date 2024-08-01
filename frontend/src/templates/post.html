@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Post.Title}}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .notification {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: 0.25rem;
+        }
+
+        .notification-error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .notification-error a {
+            color: #721c24;
+            text-decoration: none;
+            font-weight: bolder;
+            font-size: large;
+        }
+
+        .notification-error a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Literary Lions Forum</h1>
+        <nav>
+            {{ if .Authenticated }}
+            <a href="/">Home</a>
+            |
+            <form id="logout-form" action="/logout-handler" method="post" style="display:inline;">
+                <button type="submit">Logout</button>
+            </form>
+            {{ else }}
+            <a href="/">Home</a>
+            |
+            <a href="/login">Login</a>
+            |
+            <a href="/register">Register</a>
+            {{ end }}
+        </nav>
+        <div>
+        </div>
+    </header>
+    <main>
+        {{if .Error}}
+        <div class="notification notification-error">
+            <p>{{.Error}}</p>
+        </div>
+        {{end}}
+        <article>
+            <h2>{{.Post.Title}}</h2>
+            <p>{{.Post.Content}}</p>
+            <p><strong>Category:</strong> {{.Post.Category}}</p>
+            <p><strong>Created by user ID:</strong> {{.Post.UserID}}</p>
+            <p><strong>Posted at:</strong> {{.Post.CreatedAt}}</p>
+
+            <!-- Like/Dislike buttons -->
+            <form method="POST" action="/posts/{{.Post.ID}}/like">
+                <button type="submit">Like</button>
+            </form>
+            <form method="POST" action="/posts/{{.Post.ID}}/dislike">
+                <button type="submit">Dislike</button>
+            </form>
+
+            <!-- Comments Section -->
+            <h3>Comments</h3>
+            {{range .Comments}}
+            <div class="comment">
+                <p>{{.Content}}</p>
+                <p><strong>Commented by user ID:</strong> {{.UserID}}</p>
+            </div>
+            {{else}}
+            <p>No comments yet.</p>
+            {{end}}
+
+            <!-- Add Comment Form -->
+            <h3>Add a Comment</h3>
+            <form method="POST" action="/comment?postID={{.Post.ID}}">
+                <textarea name="content" rows="4" required></textarea>
+                <button type="submit">Add Comment</button>
+            </form>
+        </article>
+    </main>
+    <footer>
+        <p>&copy; 2024 Forum</p>
+    </footer>
+</body>
+
+</html>

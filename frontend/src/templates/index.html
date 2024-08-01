@@ -4,50 +4,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Literary Lions Forum</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f9f9f9;
-        }
-
-        header {
-            background-color: #333;
-            color: white;
-            padding: 1em;
-            text-align: center;
-        }
-
-        header h1 {
-            margin: 0;
-        }
-
-        nav a {
-            color: white;
-            margin: 0 1em;
-            text-decoration: none;
-        }
-
-        main {
-            padding: 2em;
-        }
-    </style>
+    <title>Forum Index</title>
+    <link rel="stylesheet" href="/static/css/style.css">
 </head>
 
 <body>
     <header>
         <h1>Literary Lions Forum</h1>
         <nav>
-            <a href="/register">Register</a>
+            {{ if .Authenticated }}
+            <a href="/create-post">Create Post</a>
+            |
+            <form id="logout-form" action="/logout-handler" method="post" style="display:inline;">
+                <button type="submit">Logout</button>
+            </form>
+            {{ else }}
             <a href="/login">Login</a>
+            |
+            <a href="/register">Register</a>
+            {{ end }}
         </nav>
+        <div>
+        </div>
     </header>
+    <div class="sticky-filter">
+        <div class="heading">
+            <h2>Posts</h2>
+            <div>
+                <form method="GET" action="/posts/category">
+                    <label for="category">Filter by category:</label>
+                    <select name="category" id="category">
+                        <option value="">All Categories</option>
+                        <!-- Populate categories dynamically -->
+                        {{range .Categories}}
+                        <option value="{{.}}">{{.}}</option>
+                        {{end}}
+                    </select>
+                    <button type="submit">Filter</button>
+                </form>
+            </div>
+        </div>
+    </div>
     <main>
-        <h2>Recent Posts</h2>
-        <div id="posts"></div>
+        <div class="posts">
+            {{range .Posts}}
+            <article>
+                <h3><a href="/post?id={{.ID}}">{{.Title}}</a></h3>
+                <p>{{.Content}}</p>
+                <p><strong>Category:</strong> {{.Category}}</p>
+                <p><strong>Created by user ID:</strong> {{.UserID}}</p>
+            </article>
+            {{else}}
+            <p>No posts found.</p>
+            {{end}}
+        </div>
     </main>
+    <footer>
+        <p>&copy; 2024 Forum</p>
+    </footer>
 </body>
 
 </html>
