@@ -6,6 +6,7 @@ import (
 	//"fmt"
 	"io/ioutil"
 	"literary-lions/frontend/src/models"
+
 	//"log"
 
 	"net/http"
@@ -13,41 +14,42 @@ import (
 
 // ShowPosts handles the fetching and displaying of all posts in Recent Posts.
 func ShowPosts(w http.ResponseWriter, r *http.Request, respChan chan<- models.Data) {
-    // Make an HTTP GET request to the /api/posts endpoint
-    resp, err := http.Get("http://localhost:8080/api/posts")
-    if err != nil {
-        http.Error(w, "Failed to fetch posts", http.StatusInternalServerError)
-        return
-    }
-    defer resp.Body.Close()
+	// Make an HTTP GET request to the /api/posts endpoint
+	// resp, err := http.Get("http://localhost:8080/api/posts")
+	resp, err := http.Get("http://localhost:8080/posts")
+	if err != nil {
+		http.Error(w, "Failed to fetch posts", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
 
-    // Read the response body
-    body, err := ioutil.ReadAll(resp.Body)
-    if err != nil {
-        http.Error(w, "Failed to read response", http.StatusInternalServerError)
-        return
-    }
+	// Read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(w, "Failed to read response", http.StatusInternalServerError)
+		return
+	}
 
-    // Parse the JSON response into a slice of Post models
-    var posts []models.Message
-    err = json.Unmarshal(body, &posts)
-    if err != nil {
-        http.Error(w, "Failed to parse response", http.StatusInternalServerError)
-        return
-    }
-    //log.Println("posts:", posts)
+	// Parse the JSON response into a slice of Post models
+	var posts []models.Message
+	err = json.Unmarshal(body, &posts)
+	if err != nil {
+		http.Error(w, "Failed to parse response", http.StatusInternalServerError)
+		return
+	}
+	//log.Println("posts:", posts)
 
-    // Send the data through the channel
-    respChan <- models.Data{
-        Posts: posts,
-    }
-    close(respChan)
+	// Send the data through the channel
+	respChan <- models.Data{
+		Posts: posts,
+	}
+	close(respChan)
 }
 
 // CreatePost renders the template for creating a post
 func CreatePost(w http.ResponseWriter, r *http.Request) {
 
-		if r.Method == http.MethodPost {
+	if r.Method == http.MethodPost {
 		// Extract form values
 		category := r.FormValue("category")
 		title := r.FormValue("title")
@@ -55,7 +57,7 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 
 		// Create a new post
 		comment := models.Message{
-			Title: title,
+			Title:   title,
 			Content: content,
 		}
 
@@ -115,10 +117,9 @@ func PostConfirmation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	RenderTemplate(w, "post-confirmation.html", data)
-		// After displaying the confirmation, redirect to Recent Posts
+	// After displaying the confirmation, redirect to Recent Posts
 	http.Redirect(w, r, "/conversation-room?room_id=category1", http.StatusSeeOther)
 }
-
 
 // Helper function to map category to room ID
 func mapCategoryToRoomID(category string) string {
