@@ -11,6 +11,8 @@ import (
 	_ "literary-lions/backend/docs"
 	"literary-lions/backend/src/internal/db"
 	"literary-lions/backend/src/internal/handlers"
+
+	"github.com/gin-contrib/cors"
 )
 
 // @title Gin API
@@ -35,6 +37,9 @@ func main() {
 
 	// Set up Gin router
 	r := gin.Default()
+
+	// Add CORS middleware
+	r.Use(cors.Default())
 
 	// Serve Swagger UI
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
