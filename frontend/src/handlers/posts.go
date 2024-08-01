@@ -13,19 +13,6 @@ import (
 	"literary-lions/frontend/src/models"
 )
 
-// Helper function to check authentication status
-func isAuthenticated(r *http.Request) bool {
-	// Example implementation; replace with actual authentication logic
-	cookie, err := r.Cookie("session_token")
-	if err != nil || cookie == nil {
-		return false
-	}
-
-	// Here you should check the token validity (e.g., querying a database or an external service)
-	// For example purposes, we assume a valid token exists if the cookie is not empty
-	return cookie.Value != ""
-}
-
 // display posts.
 func ShowPosts(w http.ResponseWriter, r *http.Request) {
 	// Make an HTTP GET request to the /api/posts endpoint
@@ -51,21 +38,22 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Determine authentication status
-	authenticated := isAuthenticated(r)
+	// Get the authentication status and the currentUser if any
+	currentUser, authenticated := isAuthenticated(r)
 
-	log.Print("authenticated: ", authenticated)
-
-	categories := []string{"Random", "News", "Sport", "Technology", "Science", "Health"} // Example categories
+	// Hardcoded categories for now. Might be nice to add feature for creating it and make it dynamic later
+	categories := []string{"Random", "News", "Sport", "Technology", "Science", "Health"}
 
 	data := struct {
 		Posts         []models.Post
 		Authenticated bool
 		Categories    []string
+		Username      string
 	}{
 		Posts:         posts,
 		Authenticated: authenticated,
 		Categories:    categories,
+		Username:      currentUser,
 	}
 
 	// Render the template with posts and authentication status
@@ -96,10 +84,11 @@ func ShowPostsByCategory(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	// Determine authentication status
-	authenticated := isAuthenticated(r)
+	// Get the authentication status and the currentUser if any
+	currentUser, authenticated := isAuthenticated(r)
 
-	categories := []string{"Random", "News", "Sport", "Technology", "Science", "Health"} // Example categories
+	// Hardcoded categories for now. Might be nice to add feature for creating it and make it dynamic later
+	categories := []string{"Random", "News", "Sport", "Technology", "Science", "Health"}
 
 	// Check response status code
 	if resp.StatusCode == http.StatusNotFound {
@@ -109,10 +98,12 @@ func ShowPostsByCategory(w http.ResponseWriter, r *http.Request) {
 			Posts         []models.Post
 			Authenticated bool
 			Categories    []string
+			Username      string
 		}{
 			Posts:         emptyPosts,
 			Authenticated: authenticated,
 			Categories:    categories,
+			Username:      currentUser,
 		}
 
 		// Render the template with posts and authentication status
@@ -139,10 +130,12 @@ func ShowPostsByCategory(w http.ResponseWriter, r *http.Request) {
 		Posts         []models.Post
 		Authenticated bool
 		Categories    []string
+		Username      string
 	}{
 		Posts:         posts,
 		Authenticated: authenticated,
 		Categories:    categories,
+		Username:      currentUser,
 	}
 	// Render the template with posts and authentication status
 	RenderTemplate(w, "index.html", data)
@@ -185,19 +178,21 @@ func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Determine authentication status
-	authenticated := isAuthenticated(r)
+	// Get the authentication status and the currentUser if any
+	currentUser, authenticated := isAuthenticated(r)
 
 	data := struct {
 		Post          models.Post
 		Authenticated bool
 		Comments      []models.Comment
 		Error         bool
+		Username      string
 	}{
 		Post:          response.Post,
 		Authenticated: authenticated,
 		Comments:      response.Comments,
 		Error:         false,
+		Username:      currentUser,
 	}
 
 	// Render the template with posts and authentication status
@@ -205,14 +200,23 @@ func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreatePost(w http.ResponseWriter, r *http.Request) {
+
+	// Get the authentication status and the currentUser if any
+	currentUser, authenticated := isAuthenticated(r)
+
 	if r.Method == http.MethodGet {
-		categories := []string{"Random", "News", "Sport", "Technology", "Science", "Health"} // Example categories
+		// Hardcoded categories for now. Might be nice to add feature for creating it and make it dynamic later
+		categories := []string{"Random", "News", "Sport", "Technology", "Science", "Health"}
 		data := struct {
-			Categories []string
-			Error      bool
+			Categories    []string
+			Error         bool
+			Authenticated bool
+			Username      string
 		}{
-			Categories: categories,
-			Error:      false,
+			Categories:    categories,
+			Error:         false,
+			Authenticated: authenticated,
+			Username:      currentUser,
 		}
 		tmpl := template.Must(template.ParseFiles("templates/create-post.html"))
 		tmpl.Execute(w, data)

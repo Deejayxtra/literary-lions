@@ -5,15 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"sync"
 	"time"
-	"io/ioutil"
 
 	"literary-lions/frontend/src/models"
 )
-
 
 // Register handles user registration.
 func Register(w http.ResponseWriter, r *http.Request) {
@@ -29,13 +28,12 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 		// Print credentials for debugging
 		fmt.Printf("Credentials: email=%s, password=%s\n, username=%s\n", email, password, username)
-		
+
 		respChan := make(chan models.ResponseDetails, 1)
-		// errChan := make(chan error, 1)
 		var wg sync.WaitGroup
 
 		// Sample credentials
-		credentials := models.Credentials {
+		credentials := models.Credentials{
 			Email:    email,
 			Username: username,
 			Password: password,
@@ -85,7 +83,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 func SendRegistrationRequest(credentials models.Credentials, wg *sync.WaitGroup, respChan chan models.ResponseDetails) {
 
 	defer wg.Done() // Notify the wait group when this goroutine completes
-	
+
 	// Marshal the user object to JSON.
 	jsonData, err := json.Marshal(credentials)
 	if err != nil {
@@ -97,7 +95,7 @@ func SendRegistrationRequest(credentials models.Credentials, wg *sync.WaitGroup,
 	}
 
 	// Define the POST request
-	url := "http://localhost:8080/register"
+	url := "http://localhost:8888/register"
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		respChan <- models.ResponseDetails{

@@ -6,66 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Post</title>
     <link rel="stylesheet" href="/static/css/style.css">
-    <style>
-        .create-post {
-            max-width: 600px;
-            margin: 10rem auto;
-            padding: 2rem;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-
-        form {
-            display: flex;
-            flex-direction: column;
-        }
-
-        label {
-            margin-bottom: 0.5rem;
-            font-weight: bold;
-        }
-
-        /* input, select, textarea, button {
-            margin-bottom: 1rem;
-            padding: 0.5rem;
-            font-size: 1rem;
-        } */
-        .notification {
-            padding: 1rem;
-            margin-bottom: 1rem;
-            border: 1px solid transparent;
-            border-radius: 0.25rem;
-        }
-
-        .notification-error {
-            color: #721c24;
-            background-color: #f8d7da;
-            border-color: #f5c6cb;
-        }
-
-        .notification-error a {
-            color: #721c24;
-            text-decoration: none;
-            font-weight: bolder;
-            font-size: large;
-        }
-
-        .notification-error a:hover {
-            text-decoration: underline;
-        }
-    </style>
 </head>
 
 <body>
     <header>
-        <h1>Create New Post - Literary Lions Forum</h1>
+        <h1>Literary Lions Forum</h1>
         <nav>
             <a href="/">Home</a>
         </nav>
-        <div>
+        <div class="user-space">
+            {{ if .Authenticated }}
+            <span class="welcome-message">Welcome, {{ .Username }}!</span>
+            <form id="logout-form" action="/logout-handler" method="post" style="display:inline;">
+                <button type="submit">Logout</button>
+            </form>
+            {{ end }}
         </div>
     </header>
     <main class="create-post">
+        <h2>Create New Post</h2>
         {{if .Error}}
         <div class="notification notification-error">
             <p>{{.Error}}</p>
@@ -84,7 +43,7 @@
             <input type="text" id="title" name="title" required>
 
             <label for="content">Content:</label>
-            <textarea id="content" name="content" required></textarea>
+            <textarea id="content" name="content" rows="12" required></textarea>
 
             <button type="submit">Create Post</button>
         </form>

@@ -20,9 +20,10 @@ type ResponseDetails struct {
 }
 
 type AuthResponse struct {
-	Success bool
-	Token   string `json:"token"`
-	Message string
+	Success  bool
+	Token    string `json:"token"`
+	Message  string
+	Username string `json:"username"`
 }
 
 // User struct represents a user in the system.

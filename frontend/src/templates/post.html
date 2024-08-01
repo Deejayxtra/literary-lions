@@ -6,31 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Post.Title}}</title>
     <link rel="stylesheet" href="/static/css/style.css">
-    <style>
-        .notification {
-            padding: 1rem;
-            margin-bottom: 1rem;
-            border: 1px solid transparent;
-            border-radius: 0.25rem;
-        }
-
-        .notification-error {
-            color: #721c24;
-            background-color: #f8d7da;
-            border-color: #f5c6cb;
-        }
-
-        .notification-error a {
-            color: #721c24;
-            text-decoration: none;
-            font-weight: bolder;
-            font-size: large;
-        }
-
-        .notification-error a:hover {
-            text-decoration: underline;
-        }
-    </style>
 </head>
 
 <body>
@@ -39,10 +14,6 @@
         <nav>
             {{ if .Authenticated }}
             <a href="/">Home</a>
-            |
-            <form id="logout-form" action="/logout-handler" method="post" style="display:inline;">
-                <button type="submit">Logout</button>
-            </form>
             {{ else }}
             <a href="/">Home</a>
             |
@@ -51,7 +22,13 @@
             <a href="/register">Register</a>
             {{ end }}
         </nav>
-        <div>
+        <div class="user-space">
+            {{ if .Authenticated }}
+            <span class="welcome-message">Welcome, {{ .Username }}!</span>
+            <form id="logout-form" action="/logout-handler" method="post" style="display:inline;">
+                <button type="submit">Logout</button>
+            </form>
+            {{ end }}
         </div>
     </header>
     <main>

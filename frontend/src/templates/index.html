@@ -14,17 +14,19 @@
         <nav>
             {{ if .Authenticated }}
             <a href="/create-post">Create Post</a>
-            |
-            <form id="logout-form" action="/logout-handler" method="post" style="display:inline;">
-                <button type="submit">Logout</button>
-            </form>
             {{ else }}
             <a href="/login">Login</a>
             |
             <a href="/register">Register</a>
             {{ end }}
         </nav>
-        <div>
+        <div class="user-space">
+            {{ if .Authenticated }}
+            <span class="welcome-message">Welcome, {{ .Username }}!</span>
+            <form id="logout-form" action="/logout-handler" method="post" style="display:inline;">
+                <button type="submit">Logout</button>
+            </form>
+            {{ end }}
         </div>
     </header>
     <div class="sticky-filter">
