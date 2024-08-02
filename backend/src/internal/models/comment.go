@@ -9,7 +9,7 @@ type Comment1 struct {
 	PostID    int
 	UserID    int
 	Content   string
-	CreatedAt time.Time
+	CreatedAt time.Time `json:"created_at" db:"createdAt"`
 }
 
 func CreateComment(postID, userID int, content string) error {
