@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"literary-lions/frontend/src/config"
 	"literary-lions/frontend/src/models"
 )
 
@@ -95,7 +96,7 @@ func SendRegistrationRequest(credentials models.Credentials, wg *sync.WaitGroup,
 	}
 
 	// Define the POST request
-	url := "http://localhost:8888/register"
+	url := config.BaseApi + "/register"
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		respChan <- models.ResponseDetails{

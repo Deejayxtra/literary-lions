@@ -76,6 +76,8 @@ package models
 
 import (
 	"database/sql"
+	"log"
+
 	// "errors"
 	"time"
 )
@@ -99,6 +101,11 @@ func GetAllPosts(db *sql.DB) ([]Post, error) {
 	// Updated SQL query to include createdAt and order by createdAt DESC
 	rows, err := db.Query("SELECT id, title, content, category, user_id, created_at FROM posts ORDER BY created_at DESC")
 	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Print("Empty post")
+			return []Post{}, nil //Retrun array of empty object
+		}
+		log.Print("Error from db Post ", err.Error())
 		return nil, err
 	}
 	defer rows.Close()
@@ -112,6 +119,7 @@ func GetAllPosts(db *sql.DB) ([]Post, error) {
 		}
 		posts = append(posts, post)
 	}
+	log.Print("These are the the posts: ", posts)
 
 	// Check for errors after looping through rows
 	if err := rows.Err(); err != nil {

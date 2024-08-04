@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"sync"
 
+	"literary-lions/frontend/src/config"
 	"literary-lions/frontend/src/models"
 )
 
@@ -43,7 +44,7 @@ func SendLogoutRequest(cookie *http.Cookie, wg *sync.WaitGroup, respChan chan mo
 	defer wg.Done()
 
 	// Create a POST request to the logout endpoint
-	req, err := http.NewRequest(http.MethodPost, "http://localhost:8888/logout", nil)
+	req, err := http.NewRequest(http.MethodPost, config.BaseApi+"/logout", nil)
 	if err != nil {
 		respChan <- models.AuthResponse{
 			Success: false,

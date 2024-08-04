@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"literary-lions/frontend/src/config"
 	"literary-lions/frontend/src/models"
 )
 
@@ -100,7 +101,8 @@ func SendLoginRequest(credentials models.Credentials, wg *sync.WaitGroup, respCh
 	}
 
 	// Create a POST request
-	req, err := http.NewRequest(http.MethodPost, "http://localhost:8888/login", bytes.NewBuffer(jsonData))
+	// req, err := http.NewRequest(http.MethodPost, "http://localhost:8888/login", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest(http.MethodPost, config.BaseApi+"/login", bytes.NewBuffer(jsonData))
 	if err != nil {
 		respChan <- models.AuthResponse{
 			Success: false,

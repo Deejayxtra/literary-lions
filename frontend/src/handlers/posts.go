@@ -10,13 +10,14 @@ import (
 	"net/http"
 	"sync"
 
+	"literary-lions/frontend/src/config"
 	"literary-lions/frontend/src/models"
 )
 
 // display posts.
 func ShowPosts(w http.ResponseWriter, r *http.Request) {
 	// Make an HTTP GET request to the /api/posts endpoint
-	resp, err := http.Get("http://localhost:8888/posts")
+	resp, err := http.Get(config.BaseApi + "/posts")
 	if err != nil {
 		http.Error(w, "Failed to fetch posts", http.StatusInternalServerError)
 		return
@@ -73,7 +74,7 @@ func ShowPostsByCategory(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	} else {
 		// If category is specified, fetch posts by category
-		url = "http://localhost:8888/posts/category/" + category
+		url = config.BaseApi + "/posts/category/" + category
 	}
 
 	// Make an HTTP GET request to the /api/posts endpoint
@@ -148,7 +149,8 @@ func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 
 	// Create a new GET request
-	req, err := http.NewRequest("GET", "http://localhost:8888/api/post/"+id, nil)
+	// req, err := http.NewRequest("GET", "http://localhost:8888/api/post/"+id, nil)
+	req, err := http.NewRequest("GET", config.BaseApi+"/post/"+id, nil)
 	if err != nil {
 		http.Error(w, "Failed to create request", http.StatusInternalServerError)
 		return
@@ -293,7 +295,7 @@ func SendCreatePostRequest(cookie *http.Cookie, payload models.Post, waitGroup *
 	}
 
 	// Create a POST request
-	req, err := http.NewRequest("POST", "http://localhost:8888/api/post", bytes.NewBuffer(postData))
+	req, err := http.NewRequest("POST", config.BaseApi+"/post", bytes.NewBuffer(postData))
 	if err != nil {
 		respChan <- models.ResponseDetails{Status: http.StatusInternalServerError, Message: "Failed to create request"}
 		return

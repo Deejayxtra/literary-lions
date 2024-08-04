@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"sync"
 
+	"literary-lions/frontend/src/config"
 	"literary-lions/frontend/src/models"
 )
 
@@ -86,7 +87,7 @@ func SendAddCommentRequest(cookie *http.Cookie, payload models.Comment, waitGrou
 	}
 
 	// Create a POST request
-	req, err := http.NewRequest("POST", "http://localhost:8888/api/post/"+payload.PostID+"/comment", bytes.NewBuffer(commentData))
+	req, err := http.NewRequest("POST", config.BaseApi+"/post/"+payload.PostID+"/comment", bytes.NewBuffer(commentData))
 	if err != nil {
 		respChan <- models.ResponseDetails{Status: http.StatusInternalServerError, Message: "Failed to create request"}
 		return
