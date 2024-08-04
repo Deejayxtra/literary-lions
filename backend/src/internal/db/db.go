@@ -62,26 +62,40 @@ func createTables(db *sql.DB) {
             FOREIGN KEY (post_id) REFERENCES posts(id),
             FOREIGN KEY (user_id) REFERENCES users(id)
         )`,
-		`CREATE TABLE IF NOT EXISTS likes (
+		`CREATE TABLE IF NOT EXISTS post_likes (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			user_id INTEGER NOT NULL,
 			post_id INTEGER,
+			is_like BOOLEAN NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (user_id) REFERENCES users(id),
+			FOREIGN KEY (post_id) REFERENCES posts(id)
+        )`,
+		`CREATE TABLE IF NOT EXISTS post_dislikes (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
+			post_id INTEGER,
+			is_dislike BOOLEAN NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (user_id) REFERENCES users(id),
+			FOREIGN KEY (post_id) REFERENCES posts(id)
+        )`,
+		`CREATE TABLE IF NOT EXISTS comment_likes (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
 			comment_id INTEGER,
 			is_like BOOLEAN NOT NULL,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY (user_id) REFERENCES users(id),
-			FOREIGN KEY (post_id) REFERENCES posts(id),
 			FOREIGN KEY (comment_id) REFERENCES comments(id)
         )`,
-		`CREATE TABLE IF NOT EXISTS dislikes (
+		`CREATE TABLE IF NOT EXISTS comment_dislikes (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			user_id INTEGER NOT NULL,
-			post_id INTEGER,
 			comment_id INTEGER,
 			is_dislike BOOLEAN NOT NULL,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY (user_id) REFERENCES users(id),
-			FOREIGN KEY (post_id) REFERENCES posts(id),
 			FOREIGN KEY (comment_id) REFERENCES comments(id)
         )`,
 	}
