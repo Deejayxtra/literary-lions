@@ -118,6 +118,14 @@ func GetAllPosts(db *sql.DB) ([]Post, error) {
 		if err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.Category, &post.UserID, &post.CreatedAt); err != nil {
 			return nil, err
 		}
+
+		// Fetch the username for each post
+        user, err := GetUser(post.UserID)
+        if err != nil {
+            return nil, err
+        }
+        post.Username = user.Username
+
 		posts = append(posts, post)
 	}
 	log.Print("These are the the posts: ", posts)
