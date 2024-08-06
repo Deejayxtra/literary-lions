@@ -116,3 +116,19 @@ func AuthenticateUser(email, password string) (*User, error) {
 
 	return user, nil
 }
+
+func GetUser(userID int) (*User, error) {
+	user := &User{}
+
+	row := db.QueryRow("SELECT id, email, username, password FROM users WHERE id = ?", userID)
+
+	err := row.Scan(&user.ID, &user.Email, &user.Username, &user.Password)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("user not found")
+		}
+		return nil, err
+	}
+
+	return user, nil
+}

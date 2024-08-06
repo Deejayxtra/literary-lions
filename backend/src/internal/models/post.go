@@ -87,6 +87,7 @@ type Post struct {
 	UserID    int
 	Title     string
 	Content   string
+	Username  string
 	Category  string
 	CreatedAt time.Time `json:"created_at" db:"createdAt"`
 }
@@ -141,6 +142,12 @@ func GetPostByID(postID int) (Post, error) {
 		}
 		return Post{}, err
 	}
+	user, err := GetUser(post.UserID) 
+	if err != nil {
+		return Post{}, err
+	}
+	post.Username = user.Username
+	
 
 	return post, nil
 }
