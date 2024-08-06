@@ -9,17 +9,17 @@ import (
 func main() {
 
 	// Define your handlers for routes
-
 	http.HandleFunc("/", handlers.ShowPosts)
 	http.HandleFunc("/posts/category", handlers.ShowPostsByCategory)
 	http.HandleFunc("/post", handlers.ShowPostByID)
+	http.HandleFunc("/post/like", handlers.LikePost)
+	http.HandleFunc("/post/dislike", handlers.DislikePost)
 	http.HandleFunc("/comment", handlers.AddComment)
 
 	http.HandleFunc("/register", handlers.Register)
 	http.HandleFunc("/login", handlers.LoginHandler)
 	http.HandleFunc("/logout-handler", handlers.Logout)
 	http.HandleFunc("/create-post", handlers.CreatePost)
-	http.HandleFunc("/conversation-room", handlers.ConversationRoom)
 
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 

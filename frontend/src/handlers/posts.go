@@ -9,10 +9,20 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"unicode/utf8"
 
 	"literary-lions/frontend/src/config"
 	"literary-lions/frontend/src/models"
 )
+
+// Helper function to truncate post content to 150 characters
+func truncateContent(content string, limit int) string {
+	if utf8.RuneCountInString(content) > limit {
+		runes := []rune(content)
+		return string(runes[:limit]) + "..."
+	}
+	return content
+}
 
 // display posts.
 func ShowPosts(w http.ResponseWriter, r *http.Request) {
@@ -37,6 +47,11 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Failed to parse response", http.StatusInternalServerError)
 		return
+	}
+
+	// Truncate the content of each post
+	for i := range posts {
+		posts[i].Content = truncateContent(posts[i].Content, 150)
 	}
 
 	// Get the authentication status and the currentUser if any
@@ -64,7 +79,6 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 
 // display posts by category.
 func ShowPostsByCategory(w http.ResponseWriter, r *http.Request) {
-
 	// Extract the category query parameter from the URL
 	category := r.URL.Query().Get("category")
 
@@ -72,6 +86,7 @@ func ShowPostsByCategory(w http.ResponseWriter, r *http.Request) {
 	if category == "" {
 		// If category is empty, fetch all posts
 		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
 	} else {
 		// If category is specified, fetch posts by category
 		url = config.BaseApi + "/posts/category/" + category
@@ -94,7 +109,6 @@ func ShowPostsByCategory(w http.ResponseWriter, r *http.Request) {
 	// Check response status code
 	if resp.StatusCode == http.StatusNotFound {
 		var emptyPosts []models.Post
-		// c.JSON(http.StatusNotFound, gin.H{"message": "No posts found for this category"})
 		data := struct {
 			Posts         []models.Post
 			Authenticated bool
@@ -127,6 +141,11 @@ func ShowPostsByCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Truncate the content of each post
+	for i := range posts {
+		posts[i].Content = truncateContent(posts[i].Content, 150)
+	}
+
 	data := struct {
 		Posts         []models.Post
 		Authenticated bool
@@ -140,7 +159,6 @@ func ShowPostsByCategory(w http.ResponseWriter, r *http.Request) {
 	}
 	// Render the template with posts and authentication status
 	RenderTemplate(w, "index.html", data)
-
 }
 
 func ShowPostByID(w http.ResponseWriter, r *http.Request) {

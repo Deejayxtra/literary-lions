@@ -41,14 +41,16 @@
             <h2>{{.Post.Title}}</h2>
             <p>{{.Post.Content}}</p>
             <p><strong>Category:</strong> {{.Post.Category}}</p>
-            <p><strong>Created by user ID:</strong> {{.Post.UserID}}</p>
+            <p><strong>Created by:</strong> {{.Post.Username}}</p>
             <p><strong>Posted at:</strong> {{.Post.CreatedAt}}</p>
 
             <!-- Like/Dislike buttons -->
-            <form method="POST" action="/posts/{{.Post.ID}}/like">
+            <form method="POST" action="/post/like?postID={{.Post.ID}}"> 
+                <input type="hidden" name="post_id" value="{{.Post.ID}}">
                 <button type="submit">Like</button>
             </form>
-            <form method="POST" action="/posts/{{.Post.ID}}/dislike">
+            <form method="POST" action="/post/dislike?postID={{.Post.ID}}">
+                <input type="hidden" name="post_id" value="{{.Post.ID}}">
                 <button type="submit">Dislike</button>
             </form>
 
