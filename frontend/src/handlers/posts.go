@@ -161,13 +161,12 @@ func ShowPostsByCategory(w http.ResponseWriter, r *http.Request) {
 	RenderTemplate(w, "index.html", data)
 }
 
+// ShowPostByID handles displaying a post by its ID
 func ShowPostByID(w http.ResponseWriter, r *http.Request) {
-
 	// Extract the id query parameter from the URL
 	id := r.URL.Query().Get("id")
 
 	// Create a new GET request
-	// req, err := http.NewRequest("GET", "http://localhost:8888/api/post/"+id, nil)
 	req, err := http.NewRequest("GET", config.BaseApi+"/post/"+id, nil)
 	if err != nil {
 		http.Error(w, "Failed to create request", http.StatusInternalServerError)
@@ -198,17 +197,22 @@ func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Format the created_at date
+	formattedDate := response.Post.CreatedAt.Format("January 2, 2006 at 3:04pm")
+
 	// Get the authentication status and the currentUser if any
 	currentUser, authenticated := isAuthenticated(r)
 
 	data := struct {
 		Post          models.Post
+		FormattedDate string
 		Authenticated bool
 		Comments      []models.Comment
 		Error         bool
 		Username      string
 	}{
 		Post:          response.Post,
+		FormattedDate: formattedDate,
 		Authenticated: authenticated,
 		Comments:      response.Comments,
 		Error:         false,
@@ -218,6 +222,7 @@ func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 	// Render the template with posts and authentication status
 	RenderTemplate(w, "post.html", data)
 }
+
 
 func CreatePost(w http.ResponseWriter, r *http.Request) {
 
