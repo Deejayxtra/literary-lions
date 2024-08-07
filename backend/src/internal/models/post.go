@@ -128,7 +128,6 @@ func GetAllPosts(db *sql.DB) ([]Post, error) {
 
 		posts = append(posts, post)
 	}
-	log.Print("These are the the posts: ", posts)
 
 	// Check for errors after looping through rows
 	if err := rows.Err(); err != nil {
