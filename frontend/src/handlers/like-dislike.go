@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"sync"
 
@@ -44,9 +43,8 @@ func LikePost(w http.ResponseWriter, r *http.Request) {
         responseDetails := <-respChan
 
         if responseDetails.Status == http.StatusOK {
-            http.Redirect(w, r, "post?id="+postIDStr, http.StatusSeeOther)
+           http.Redirect(w, r, "post?id="+postIDStr, http.StatusSeeOther)
         } else {
-            log.Print("Something went wrong")
             tmpl := template.Must(template.ParseFiles("templates/post.html"))
             tmpl.Execute(w, map[string]interface{}{
                 "Error": responseDetails.Message,
@@ -78,7 +76,7 @@ func DislikePost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		
-		go SendLikeRequest(postIDStr, cookieToken, &wg, respChan)
+		go SendDislikeRequest(postIDStr, cookieToken, &wg, respChan)
         go func() {
             wg.Wait()
             close(respChan)
@@ -89,7 +87,6 @@ func DislikePost(w http.ResponseWriter, r *http.Request) {
         if responseDetails.Status == http.StatusOK {
             http.Redirect(w, r, "post?id="+postIDStr, http.StatusSeeOther)
         } else {
-            log.Print("Something went wrong")
             tmpl := template.Must(template.ParseFiles("templates/post.html"))
             tmpl.Execute(w, map[string]interface{}{
                 "Error": responseDetails.Message,
@@ -102,8 +99,7 @@ func DislikePost(w http.ResponseWriter, r *http.Request) {
 // Function to send the like/dislike request to the backend
 func SendLikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGroup, respChan chan models.ResponseDetails) {
     defer waitGroup.Done()
-
-    req, err := http.NewRequest("POST", config.BaseApi+"/post/"+id+"/like ", nil) 
+    req, err := http.NewRequest("POST", config.BaseApi+"/post/"+id+"/like", nil) 
     if err != nil {
         respChan <- models.ResponseDetails{Status: http.StatusInternalServerError, Message: "Failed to create request"}
         return
@@ -174,7 +170,7 @@ func SendLikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGroup, 
 func SendDislikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGroup, respChan chan models.ResponseDetails) {
     defer waitGroup.Done()
 
-	    req, err := http.NewRequest("POST", config.BaseApi+"/post/"+id+"/dislike ", nil) 
+	    req, err := http.NewRequest("POST", config.BaseApi+"/post/"+id+"/dislike", nil) 
     if err != nil {
         respChan <- models.ResponseDetails{Status: http.StatusInternalServerError, Message: "Failed to create request"}
         return
