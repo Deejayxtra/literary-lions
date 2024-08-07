@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"sync"
 
@@ -55,7 +54,6 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 		responseDetails := <-respChan
 
 		if responseDetails.Status == http.StatusCreated {
-			log.Print("comment added")
 			http.Redirect(w, r, "post?id="+postID, http.StatusSeeOther)
 		} else if responseDetails.Status == http.StatusUnauthorized {
 			// responseDetails.Status = http.StatusUnauthorized
@@ -65,7 +63,6 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 				"Error": template.HTML(responseDetails.Message),
 			})
 		} else {
-			log.Print("Something went wrong")
 			// responseDetails.Status = resp.StatusCode
 			responseDetails.Message = "Oops! Something went wrong. Failed to add comment."
 			tmpl := template.Must(template.ParseFiles("templates/post.html"))

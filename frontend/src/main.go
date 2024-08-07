@@ -15,6 +15,9 @@ func main() {
 	http.HandleFunc("/post/like", handlers.LikePost)
 	http.HandleFunc("/post/dislike", handlers.DislikePost)
 	http.HandleFunc("/comment", handlers.AddComment)
+	http.HandleFunc("/profile", handlers.ShowUserProfile)
+	http.HandleFunc("/update_profile", handlers.UpdateUserProfile)
+	http.HandleFunc("/delete_profile", handlers.DeleteUserProfile)
 
 	http.HandleFunc("/register", handlers.Register)
 	http.HandleFunc("/login", handlers.LoginHandler)

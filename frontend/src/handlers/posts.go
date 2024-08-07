@@ -6,11 +6,9 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"sync"
 	"unicode/utf8"
-
 	"literary-lions/frontend/src/config"
 	"literary-lions/frontend/src/models"
 )
@@ -286,7 +284,6 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 		responseDetails := <-respChan
 
 		if responseDetails.Status == http.StatusCreated {
-			log.Print("post created")
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 		} else if responseDetails.Status == http.StatusUnauthorized {
 			// responseDetails.Status = http.StatusUnauthorized
@@ -296,7 +293,6 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 				"Error": template.HTML(responseDetails.Message),
 			})
 		} else {
-			log.Print("Something went wrong")
 			// responseDetails.Status = resp.StatusCode
 			responseDetails.Message = "Oops! Something went wrong. Failed to create post."
 			tmpl := template.Must(template.ParseFiles("templates/create-post.html"))

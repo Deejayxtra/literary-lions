@@ -28,11 +28,13 @@ type AuthResponse struct {
 
 // User struct represents a user in the system.
 type User struct {
-	ID       int    `json:"id"`
-	Email    string `json:"email"`
-	Username string `json:"username"`
-	Password string `json:"-"`
-	Role     string `json:"role"`
+	ID       	int    		`json:"id"`
+	Email    	string 		`json:"email"`
+	Username 	string 		`json:"username"`
+	Password 	string 		`json:"-"`
+	ProfilePic 	string   	`json:"profile_pic"`
+	CreatedAt  	time.Time 	`json:"created_at"`
+	Role     	string 		`json:"role"`
 }
 
 // Category struct represents a category for posts.
