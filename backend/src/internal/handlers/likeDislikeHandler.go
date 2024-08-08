@@ -38,7 +38,6 @@ func LikePost(c *gin.Context) {
     // Update the likes table for POST
     err = models.PostLikeAndUnlike(userID.(int), postID)
     if err != nil {
-        log.Print("error: ", err.Error())
         c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
         return
     }
@@ -75,7 +74,6 @@ func DislikePost(c *gin.Context) {
     // Update the likes table for POST
     err = models.PostDisLikeAndUndislike(userID.(int), postID)
     if err != nil {
-        log.Print("error: ", err.Error())
         c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
         return
     }
@@ -95,36 +93,29 @@ func DislikePost(c *gin.Context) {
 // @Failure 401 {object} gin.H
 // @Router /api/comment/{id}/like [post]
 // @Security ApiKeyAuth
-// func LikeComment(c *gin.Context) {
-// 	userID, exists := c.Get("userID")
-// 	if !exists {
-// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-// 		return
-// 	}
+func LikeComment(c *gin.Context) {
+    userID, exists := c.Get("userID")
+    if !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
 
-// 	commentIDStr := c.Param("id")
-// 	commentID, err := strconv.Atoi(commentIDStr)
-// 	if err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid comment ID"})
-// 		return
-// 	}
+    postIDStr := c.Param("id")
+    postID, err := strconv.Atoi(postIDStr)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
+        return
+    }
 
-// 	// Add the like
-// 	err = models.CreateLike(userID.(int), 0, commentID, true)
-// 	if err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
+    // Update the likes table for POST
+    err = models.PostLikeAndUnlike(userID.(int), postID)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
 
-// 	// Get the updated like count
-// 	likeCount, err := models.CountLikes(0, commentID)
-// 	if err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve like count"})
-// 		return
-// 	}
-
-// 	c.JSON(http.StatusOK, gin.H{"message": "Comment liked successfully", "likes": likeCount})
-// }
+    c.JSON(http.StatusOK, gin.H{"message": "Request successfully processed"})
+}
 
 // DislikeComment godoc
 // @Summary Dislike a comment
@@ -138,36 +129,30 @@ func DislikePost(c *gin.Context) {
 // @Failure 401 {object} gin.H
 // @Router /api/comment/{id}/dislike [post]
 // @Security ApiKeyAuth
-// func DislikeComment(c *gin.Context) {
-// 	userID, exists := c.Get("userID")
-// 	if !exists {
-// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-// 		return
-// 	}
+func DislikeComment(c *gin.Context) {
+	    userID, exists := c.Get("userID")
+    if !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
 
-// 	commentIDStr := c.Param("id")
-// 	commentID, err := strconv.Atoi(commentIDStr)
-// 	if err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid comment ID"})
-// 		return
-// 	}
+    postIDStr := c.Param("id")
+    postID, err := strconv.Atoi(postIDStr)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
+        return
+    }
 
-// 	// Add the dislike
-// 	err = models.CreateLike(userID.(int), 0, commentID, false)
-// 	if err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
+    // Update the likes table for POST
+    err = models.PostDisLikeAndUndislike(userID.(int), postID)
+    if err != nil {
+        log.Print("error: ", err.Error())
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
 
-// 	// Get the updated dislike count
-// 	dislikeCount, err := models.CountDislikes(0, commentID)
-// 	if err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve dislike count"})
-// 		return
-// 	}
-
-// 	c.JSON(http.StatusOK, gin.H{"message": "Comment disliked successfully", "dislikes": dislikeCount})
-// }
+    c.JSON(http.StatusOK, gin.H{"message": "Request successfully processed"})
+}
 
 // UnlikePost godoc
 // @Summary Remove like from a post

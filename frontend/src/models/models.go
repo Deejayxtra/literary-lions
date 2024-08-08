@@ -14,9 +14,9 @@ type Credentials struct {
 }
 
 type ResponseDetails struct {
-	Success bool
-	Message string
-	Status  int
+	Success   bool
+	Message   string
+	Status    int
 }
 
 type AuthResponse struct {
@@ -53,12 +53,15 @@ type Post struct {
 	Username   string 	 `json:"username"`
 	Content    string    `json:"content"`
 	CreatedAt  time.Time `json:"created_at"`
+	
 }
 
 // Post struct represents a post in the forum.
 type PostDetails struct {
 	Post     Post
 	Comments []Comment
+	Likes 	  int
+	Dislikes  int
 }
 
 // Comment struct represents a comment on a post.

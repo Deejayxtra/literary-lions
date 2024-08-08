@@ -138,28 +138,18 @@ func RemoveLikeFromPost(userID, postID int) error {
     return err
 }
 
+// CountPostLikes returns the total number of likes for a post
+func CountPostLikes(postID int) (int, error) {
+	var count int
+	query := "SELECT COUNT(*) FROM post_likes WHERE post_id = ? AND is_like = 1"
+	err := db.QueryRow(query, postID).Scan(&count)
+	return count, err
+}
 
-
-
-
-// // RemoveLike removes a like or dislike for a post or comment
-// func RemoveLike(userID, postID, commentID int) error {
-// 	_, err := db.Exec("DELETE FROM likes WHERE user_id = ? AND post_id = ? AND comment_id = ?", userID, postID, commentID)
-// 	return err
-// }
-
-// // CountLikes returns the total number of likes for a post or comment
-// func CountLikes(postID, commentID int) (int, error) {
-// 	var count int
-// 	query := "SELECT COUNT(*) FROM likes WHERE post_id = ? AND comment_id = ? AND is_like = 1"
-// 	err := db.QueryRow(query, postID, commentID).Scan(&count)
-// 	return count, err
-// }
-
-// // CountDislikes returns the total number of dislikes for a post or comment
-// func CountDislikes(postID, commentID int) (int, error) {
-// 	var count int
-// 	query := "SELECT COUNT(*) FROM likes WHERE post_id = ? AND comment_id = ? AND is_like = 0"
-// 	err := db.QueryRow(query, postID, commentID).Scan(&count)
-// 	return count, err
-// }
+// CountPostDislikes returns the total number of likes for a post
+func CountPostDislikes(postID int) (int, error) {
+	var count int
+	query := "SELECT COUNT(*) FROM post_dislikes WHERE post_id = ? AND is_dislike = 1"
+	err := db.QueryRow(query, postID).Scan(&count)
+	return count, err
+}

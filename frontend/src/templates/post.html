@@ -46,14 +46,20 @@
             <p><strong>Posted on:</strong> {{.FormattedDate}}</p>
 
             <div class="icon-container">
-                <!-- Like/Dislike buttons -->
-                <form method="POST" action="/post/like?postID={{.Post.ID}}"> 
+                <!-- Like/Dislike buttons and like count -->
+                <form method="POST" action="/postlike?postID={{.Post.ID}}" style="display:inline;">
                     <input type="hidden" name="post_id" value="{{.Post.ID}}">
-                    <button type="submit"><i class="fas fa-thumbs-up"></i></button>
+                    <button type="submit" class="like-button">
+                        <i class="fas fa-thumbs-up"></i> Like 
+                    </button>
+                    <span>{{.Likes}}</span>
                 </form>
-                <form method="POST" action="/post/dislike?postID={{.Post.ID}}">
+                <form method="POST" action="/postdislike?postID={{.Post.ID}}" style="display:inline;">
                     <input type="hidden" name="post_id" value="{{.Post.ID}}">
-                    <button type="submit"><i class="fas fa-thumbs-down"></i></button>
+                    <button type="submit" class="dislike-button">
+                        <i class="fas fa-thumbs-down"></i> Dislike 
+                    </button>
+                    <span>{{.Dislikes}}</span>
                 </form>
             </div>
             <!-- Comments Section -->

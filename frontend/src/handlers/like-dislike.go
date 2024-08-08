@@ -43,7 +43,7 @@ func LikePost(w http.ResponseWriter, r *http.Request) {
         responseDetails := <-respChan
 
         if responseDetails.Status == http.StatusOK {
-           http.Redirect(w, r, "post?id="+postIDStr, http.StatusSeeOther)
+           http.Redirect(w, r, "/post?id="+postIDStr, http.StatusSeeOther)
         } else {
             tmpl := template.Must(template.ParseFiles("templates/post.html"))
             tmpl.Execute(w, map[string]interface{}{
@@ -85,7 +85,7 @@ func DislikePost(w http.ResponseWriter, r *http.Request) {
         responseDetails := <-respChan
 
         if responseDetails.Status == http.StatusOK {
-            http.Redirect(w, r, "post?id="+postIDStr, http.StatusSeeOther)
+            http.Redirect(w, r, "/post?id="+postIDStr, http.StatusSeeOther)
         } else {
             tmpl := template.Must(template.ParseFiles("templates/post.html"))
             tmpl.Execute(w, map[string]interface{}{

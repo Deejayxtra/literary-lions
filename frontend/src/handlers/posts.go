@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	"literary-lions/frontend/src/config"
+	"literary-lions/frontend/src/models"
+	"log"
 	"net/http"
 	"sync"
 	"unicode/utf8"
-	"literary-lions/frontend/src/config"
-	"literary-lions/frontend/src/models"
 )
 
 // Helper function to truncate post content to 150 characters
@@ -163,6 +164,7 @@ func ShowPostsByCategory(w http.ResponseWriter, r *http.Request) {
 func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 	// Extract the id query parameter from the URL
 	id := r.URL.Query().Get("id")
+	log.Print("ID response: ", id)
 
 	// Create a new GET request
 	req, err := http.NewRequest("GET", config.BaseApi+"/post/"+id, nil)
@@ -208,6 +210,8 @@ func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 		Comments      []models.Comment
 		Error         bool
 		Username      string
+		Likes		  int
+		Dislikes      int
 	}{
 		Post:          response.Post,
 		FormattedDate: formattedDate,
@@ -215,8 +219,10 @@ func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 		Comments:      response.Comments,
 		Error:         false,
 		Username:      currentUser,
+		Likes:		  response.Likes,
+		Dislikes:     response.Dislikes,
 	}
-
+	
 	// Render the template with posts and authentication status
 	RenderTemplate(w, "post.html", data)
 }
