@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"literary-lions/frontend/src/config"
 	"literary-lions/frontend/src/models"
-	"log"
 	"net/http"
 	"sync"
 	"unicode/utf8"
@@ -164,7 +163,6 @@ func ShowPostsByCategory(w http.ResponseWriter, r *http.Request) {
 func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 	// Extract the id query parameter from the URL
 	id := r.URL.Query().Get("id")
-	log.Print("ID response: ", id)
 
 	// Create a new GET request
 	req, err := http.NewRequest("GET", config.BaseApi+"/post/"+id, nil)
@@ -219,10 +217,10 @@ func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 		Comments:      response.Comments,
 		Error:         false,
 		Username:      currentUser,
-		Likes:		  response.Likes,
-		Dislikes:     response.Dislikes,
+		Likes:		   response.Likes,
+		Dislikes:      response.Dislikes,
 	}
-	
+
 	// Render the template with posts and authentication status
 	RenderTemplate(w, "post.html", data)
 }

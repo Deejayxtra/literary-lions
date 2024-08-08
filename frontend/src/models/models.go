@@ -71,6 +71,8 @@ type Comment struct {
 	UserID    int       `json:"user_id"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
+	Likes 	  int		`json:"likes"`
+	Dislikes  int		`json:"dislikes"`
 }
 
 // Like struct represents a like/dislike on a post or comment.
@@ -124,25 +126,4 @@ func GetUserByEmail(email string) (*User, error) {
 		// Password: "Ud21wC+n/y0I27JcwIEGRA==",
 		Password: "$2a$10$1yII3Pq/4FbDsZz5l4P2oOkKhCzI053GcP2LHKFvw1PeFNErc4Bd2", // bcrypt hash of "password"
 	}, nil
-}
-
-// CreateUser simulates user creation.
-func CreateUser(email, username, password string) error {
-	// Simulated user creation logic
-	// Replace with actual user creation logic
-	return nil
-}
-
-// PostComment simulates post creation.
-func PostComment(categoryID int, title, content string, userID int) error {
-	// Simulated post creation logic
-	// Replace with actual post creation logic
-	return nil
-}
-
-// CreateChannel simulates comment creation.
-func CreateChannel(postID int, content string, userID int) error {
-	// Simulated comment creation logic
-	// Replace with actual comment creation logic
-	return nil
 }
