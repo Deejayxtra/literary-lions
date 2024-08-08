@@ -162,7 +162,7 @@ func GetPostByID(c *gin.Context) {
 	
 	response := struct {
 		Post     models.Post       `json:"post"`
-		Comments []models.Comment1 `json:"comments"`
+		Comments []models.Comment `json:"comments"`
 		Likes	 int			   `json:"likes"`
 		Dislikes int			   `json:"dislikes"`
 	}{

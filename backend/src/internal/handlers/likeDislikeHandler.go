@@ -108,7 +108,7 @@ func LikeComment(c *gin.Context) {
     }
 
     // Update the likes table for POST
-    err = models.PostLikeAndUnlike(userID.(int), postID)
+    err = models.CommentLikeAndUnlike(userID.(int), postID)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
         return
@@ -144,7 +144,7 @@ func DislikeComment(c *gin.Context) {
     }
 
     // Update the likes table for POST
-    err = models.PostDisLikeAndUndislike(userID.(int), postID)
+    err = models.CommentDisLikeAndUndislike(userID.(int), postID)
     if err != nil {
         log.Print("error: ", err.Error())
         c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

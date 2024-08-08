@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type Comment1 struct {
+type Comment struct {
 	ID        int
 	PostID    int
 	UserID    int
@@ -17,16 +17,16 @@ func CreateComment(postID, userID int, content string) error {
 	return err
 }
 
-func GetCommentsByPostID(postID int) ([]Comment1, error) {
+func GetCommentsByPostID(postID int) ([]Comment, error) {
 	rows, err := db.Query("SELECT id, post_id, user_id, content, created_at FROM comments WHERE post_id = ?", postID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var comments []Comment1
+	var comments []Comment
 	for rows.Next() {
-		var comment Comment1
+		var comment Comment
 		err := rows.Scan(&comment.ID, &comment.PostID, &comment.UserID, &comment.Content, &comment.CreatedAt)
 		if err != nil {
 			return nil, err
