@@ -26,6 +26,8 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	// Wait for the goroutine to finish
 	wg.Wait()
 	close(respChan)
+	
+	sessionStore.Delete(cookieToken.Value)
 
 	cookie := http.Cookie{
 		Name:   "session_token",
