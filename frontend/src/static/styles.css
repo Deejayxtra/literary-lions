@@ -283,7 +283,18 @@ nav a:hover {
 .welcome-message {
     margin: 0;
     font-weight: bold;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
 }
+
+.welcome-message-button {
+    color: #a6c8a6;
+    text-decoration: none;
+}
+
 
 .create-post {
     max-width: 600px;
