@@ -59,7 +59,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 				http.SetCookie(w, &cookie)
 
 				// Keep the token and username in store for later usage
-				sessionStore.Set(response.Token, response.Username)
+				sessionStore.Set(response.Token, response.Username, response.Email)
 
 				// // Get currentUser info for keep
 				// GetCurrentUser(w, cookie)
@@ -175,7 +175,8 @@ func SendLoginRequest(credentials models.Credentials, wg *sync.WaitGroup, respCh
 
 	token, tokenOK := responseMessage["token"].(string)
 	username, usernameOK := responseMessage["username"].(string)
-	if !tokenOK || !usernameOK {
+	email, emailOK := responseMessage["email"].(string)
+	if !tokenOK || !usernameOK || !emailOK {
 		respChan <- models.AuthResponse{
 			Success: false,
 			Message: "Invalid response from authentication server",
@@ -187,5 +188,6 @@ func SendLoginRequest(credentials models.Credentials, wg *sync.WaitGroup, respCh
 		Success:  true,
 		Token:    token,
 		Username: username,
+		Email:	  email,
 	}
 }

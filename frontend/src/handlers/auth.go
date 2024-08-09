@@ -12,10 +12,10 @@ func isAuthenticated(r *http.Request) (string, bool) {
 	}
 
 	token := cookie.Value
-	username, exists := sessionStore.Get(token)
+	user, exists := sessionStore.Get(token)
 	if !exists {
 		return "", false
 	}
 
-	return username, true
+	return user.Username, true
 }

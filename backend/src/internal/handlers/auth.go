@@ -2,9 +2,7 @@ package handlers
 
 import (
 	"net/http"
-
 	"github.com/gin-gonic/gin"
-
 	"literary-lions/backend/src/internal/models"
 )
 
@@ -65,7 +63,7 @@ func Login(c *gin.Context) {
 	// Set the session token as a cookie
 	c.SetCookie("session_token", token, 24*3600, "/", "", false, true)
 
-	c.JSON(http.StatusOK, gin.H{"token": token, "username": user.Username})
+	c.JSON(http.StatusOK, gin.H{"token": token, "username": user.Username, "email": user.Email})
 }
 
 // Logout godoc
