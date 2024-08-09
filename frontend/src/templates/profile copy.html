@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+    <header>
+        <h1>User Profile</h1>
+    </header>
+    <main>
+        <div class="profile-container">
+            <img src="{{.User.ProfilePic}}" alt="Profile Picture" class="profile-pic">
+            <h2>{{.User.Username}}</h2>
+            <p>Email: {{.User.Email}}</p>
+            <p>Joined: {{.User.CreatedAt.Format "January 2, 2006"}}</p>
+        
+            <form action="/update_profile" method="POST">
+                <input type="hidden" name="id" value="{{.User.ID}}">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" value="{{.User.Username}}">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" value="{{.User.Email}}">
+                <label for="profile_pic">Profile Picture URL</label>
+                <input type="text" id="profile_pic" name="profile_pic" value="{{.User.ProfilePic}}">
+                <button type="submit">Update Profile</button>
+            </form>
+        
+            <form action="/delete_profile" method="POST">
+                <input type="hidden" name="id" value="{{.User.ID}}">
+                <button type="submit" style="background-color: #d9534f;">Delete Profile</button>
+            </form>
+        </div>
+    </main>
+    <footer>
+        <p>&copy; 2024 Forum</p>
+    </footer>
+</body>
+
+</html>

@@ -22,7 +22,7 @@
         </nav>
         <div class="user-space">
             {{ if .Authenticated }}
-            <span class="welcome-message">Welcome, {{ .Username }}!</span>
+            <span class="welcome-message">Welcome, <a href="/profile">{{ .Username }}!</a></span>
             <form id="logout-form" action="/logout-handler" method="post" style="display:inline;">
                 <button type="submit">Logout</button>
             </form>
