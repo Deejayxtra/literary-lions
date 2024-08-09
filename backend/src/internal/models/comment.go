@@ -8,6 +8,9 @@ type Comment struct {
 	ID        int
 	PostID    int
 	UserID    int
+	Username  string
+	Likes	  int
+	Dislikes  int
 	Content   string
 	CreatedAt time.Time `json:"created_at" db:"createdAt"`
 }
@@ -31,8 +34,32 @@ func GetCommentsByPostID(postID int) ([]Comment, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		// To fetch the Username for the comment
+		user, err := GetUser(comment.UserID) 
+		if err != nil {
+			return nil, err
+		}
+		comment.Username = user.Username
+
+		// To fetch the total number of likes for the comment
+		likes, err := CountCommentLikes(comment.ID)
+		if err != nil {
+			return nil, err
+		}
+		comment.Likes = likes
+
+		// To fetch the total number of dislikes for the comment
+		dislikes, err := CountCommentDislikes(comment.ID)
+		if err != nil {
+			return nil, err
+		}
+		comment.Dislikes = dislikes
+
 		comments = append(comments, comment)
+
 	}
+
 
 	return comments, nil
 }

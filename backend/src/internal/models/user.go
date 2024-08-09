@@ -1,73 +1,9 @@
-// package models
-
-// import (
-// 	// "crypto/rand"
-// 	"database/sql"
-// 	// "encoding/base64"
-// 	"errors"
-// 	"fmt"
-// 	// "time"
-
-// 	"golang.org/x/crypto/bcrypt"
-// )
-
-// var db *sql.DB
-
-// type User struct {
-//     ID       int
-//     Email    string
-//     Username string
-//     Password string
-// 	Role     string
-// }
-
-// func SetDatabase(databaseInstance *sql.DB) {
-// 	db = databaseInstance
-// }
-
-// func RegisterUser(email, username, password string) error {
-//     hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-//     if err != nil {
-//         return err
-//     }
-
-//     _, err = db.Exec("INSERT INTO users (email, username, password, role) VALUES (?, ?, ?, 'user')", email, username, string(hashedPassword))
-//     return err
-// }
-
-// func AuthenticateUser(email, password string) (*User, error) {
-//     user := &User{}
-
-// 	fmt.Printf("email: %s, password: %s\n", email, password)
-//     row := db.QueryRow("SELECT id, email, username, password FROM users WHERE email = ?", email)
-// 	fmt.Printf("row: %v\n", row)
-//     err := row.Scan(&user.ID, &user.Email, &user.Username, &user.Password)
-//     if err != nil {
-//         if err == sql.ErrNoRows {
-//             return nil, errors.New("user not found")
-//         }
-//         return nil, err
-//     }
-
-//     err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-//     if err != nil {
-//         return nil, errors.New("invalid password")
-//     }
-
-//     return user, nil
-// }
 
 package models
 
 import (
-	// "crypto/rand"
 	"database/sql"
-	// "encoding/base64"
 	"errors"
-	"fmt"
-
-	// "time"
-
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -97,10 +33,7 @@ func RegisterUser(email, username, password string) error {
 
 func AuthenticateUser(email, password string) (*User, error) {
 	user := &User{}
-
-	fmt.Printf("email: %s, password: %s\n", email, password)
 	row := db.QueryRow("SELECT id, email, username, password FROM users WHERE email = ?", email)
-	fmt.Printf("row: %v\n", row)
 	err := row.Scan(&user.ID, &user.Email, &user.Username, &user.Password)
 	if err != nil {
 		if err == sql.ErrNoRows {

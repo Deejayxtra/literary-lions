@@ -64,10 +64,30 @@
             </div>
             <!-- Comments Section -->
             <h3>Comments</h3>
-            {{range .Comments}}
+            {{range.Comments}}
             <div class="comment">
                 <p>{{.Content}}</p>
-                <p><strong>Commented by user ID:</strong> {{.UserID}}</p>
+                <p><strong>Commented by:</strong> {{.Username}}</p>
+                <p><strong>Commented on:</strong> {{.CreatedAt.Format "Jan 2, 2006 at 3:04pm"}}</p>
+                <div class="icon2-container">
+                    <form method="POST" action="/commentlike?commentID={{.ID}}&postID={{$.Post.ID}}" style="display:inline;">
+                        <input type="hidden" name="comment_id" value="{{.ID}}">
+                        <input type="hidden" name="post_id" value="{{$.Post.ID}}">
+                        <button type="submit" class="like-button">
+                            <i class="fas fa-thumbs-up"></i> Like
+                        </button>
+                    <span>{{.Likes}}</span>
+                    </form>
+                    <form method="POST" action="/commentdislike?commentID={{.ID}}&postID={{$.Post.ID}}" style="display:inline;">
+                        <input type="hidden" name="comment_id" value="{{.ID}}">
+                        <input type="hidden" name="post_id" value="{{$.Post.ID}}">
+                        <button type="submit" class="dislike-button">
+                            <i class="fas fa-thumbs-down"></i> Dislike
+                        </button>
+                    <span>{{.Dislikes}}</span>
+                    </form>
+
+                </div>
             </div>
             {{else}}
             <p>No comments yet.</p>

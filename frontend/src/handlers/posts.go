@@ -220,7 +220,6 @@ func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 		Likes:		   response.Likes,
 		Dislikes:      response.Dislikes,
 	}
-
 	// Render the template with posts and authentication status
 	RenderTemplate(w, "post.html", data)
 }

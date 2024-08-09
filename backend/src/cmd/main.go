@@ -72,8 +72,8 @@ func main() {
 		// api.DELETE("/post/:id/undislike", handlers.UndislikePost) // Remove dislike from a specific post by ID
 
 		// // Likes and dislikes for comments
-		// api.POST("/comment/:id/like", handlers.LikeComment)             // Like a specific comment by ID
-		// api.POST("/comment/:id/dislike", handlers.DislikeComment)       // Dislike a specific comment by ID
+		api.POST("/comment/:id/like", handlers.LikeComment)             // Like a specific comment by ID
+		api.POST("/comment/:id/dislike", handlers.DislikeComment)       // Dislike a specific comment by ID
 		// api.DELETE("/comment/:id/unlike", handlers.UnlikeComment)       // Unlike a specific comment by ID
 		// api.DELETE("/comment/:id/undislike", handlers.UndislikeComment) // Remove dislike from a specific comment by ID
 	}

@@ -85,6 +85,32 @@ button:hover {
     color: #4cae4c;
 }
 
+/* Icon container styling */
+.icon2-container {
+    display: flex;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+/* Icon button styling */
+.icon2-container button {
+    color: #5cb85c;
+    background: none;
+    border: none;
+    padding: 0;
+    margin-right: 0.5rem;
+    cursor: pointer;
+}
+
+.icon2-container form {
+    margin: 0.5rem 0.5rem;
+}
+
+/* Change color of icon on hover */
+.icon2-container button:hover i {
+    color: #4cae4c;
+}
+
 .btn {
     background: #5cb85c;
     color: #fff;

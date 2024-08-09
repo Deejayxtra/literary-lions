@@ -30,8 +30,8 @@ func AddComment(c *gin.Context) {
 		return
 	}
 
-	postIDStr := c.Param("id")
-	postID, err := strconv.Atoi(postIDStr)
+	commentIDStr := c.Param("id")
+	postID, err := strconv.Atoi(commentIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
 		return
@@ -128,7 +128,6 @@ func GetAllPosts(c *gin.Context) {
 // @Router /api/post/{id} [get]
 // GetPostByID handles the retrieval of a single post by ID using Gin
 func GetPostByID(c *gin.Context) {
-
 	postIDStr := c.Param("id")
 	postID, err := strconv.Atoi(postIDStr)
 	if err != nil {

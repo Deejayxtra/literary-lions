@@ -69,6 +69,7 @@ type Comment struct {
 	ID        int       `json:"id"`
 	PostID    string    `json:"post_id"`
 	UserID    int       `json:"user_id"`
+	Username  string 	`json:"username"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
 	Likes 	  int		`json:"likes"`

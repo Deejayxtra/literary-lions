@@ -154,6 +154,22 @@ func CountPostDislikes(postID int) (int, error) {
 	return count, err
 }
  
+// CountPostLikes returns the total number of likes for a post
+func CountCommentLikes(commentID int) (int, error) {
+	var count int
+	query := "SELECT COUNT(*) FROM comment_likes WHERE comment_id = ? AND is_like = 1"
+	err := db.QueryRow(query, commentID).Scan(&count)
+	return count, err
+}
+
+// CountPostDislikes returns the total number of likes for a post
+func CountCommentDislikes(commentID int) (int, error) {
+	var count int
+	query := "SELECT COUNT(*) FROM comment_dislikes WHERE comment_id = ? AND is_dislike = 1"
+	err := db.QueryRow(query, commentID).Scan(&count)
+	return count, err
+}
+
 func CommentLikeAndUnlike(userID, commentID int) error {
 	// Check if the like already exists
 	    var like CommentLike

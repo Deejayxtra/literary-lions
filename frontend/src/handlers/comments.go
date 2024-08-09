@@ -75,7 +75,6 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 
 func SendAddCommentRequest(cookie *http.Cookie, payload models.Comment, waitGroup *sync.WaitGroup, respChan chan models.ResponseDetails) {
 	defer waitGroup.Done()
-
 	// Convert payload to JSON
 	commentData, err := json.Marshal(payload)
 	if err != nil {

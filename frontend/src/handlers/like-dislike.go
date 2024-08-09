@@ -99,7 +99,7 @@ func DislikePost(w http.ResponseWriter, r *http.Request) {
 // Function to send the like/dislike request to the backend
 func SendLikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGroup, respChan chan models.ResponseDetails) {
     defer waitGroup.Done()
-    req, err := http.NewRequest("POST", config.BaseApi+"/comment/"+id+"/like", nil) 
+    req, err := http.NewRequest("POST", config.BaseApi+"/post/"+id+"/like", nil) 
     if err != nil {
         respChan <- models.ResponseDetails{Status: http.StatusInternalServerError, Message: "Failed to create request"}
         return
@@ -170,7 +170,7 @@ func SendLikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGroup, 
 func SendDislikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGroup, respChan chan models.ResponseDetails) {
     defer waitGroup.Done()
 
-	    req, err := http.NewRequest("POST", config.BaseApi+"/comment/"+id+"/dislike", nil) 
+	    req, err := http.NewRequest("POST", config.BaseApi+"/post/"+id+"/dislike", nil) 
     if err != nil {
         respChan <- models.ResponseDetails{Status: http.StatusInternalServerError, Message: "Failed to create request"}
         return
@@ -241,6 +241,7 @@ func SendDislikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGrou
 func LikeComment(w http.ResponseWriter, r *http.Request) {
     if r.Method == http.MethodPost {
         r.ParseForm()
+        commentIDStr := r.URL.Query().Get("commentID")
         postIDStr := r.URL.Query().Get("postID")
 
 		respChan := make(chan models.ResponseDetails, 1)
@@ -260,7 +261,7 @@ func LikeComment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		
-		go SendLikeRequestComment(postIDStr, cookieToken, &wg, respChan)
+		go SendLikeRequestComment(commentIDStr, cookieToken, &wg, respChan)
         go func() {
             wg.Wait()
             close(respChan)
@@ -282,6 +283,7 @@ func LikeComment(w http.ResponseWriter, r *http.Request) {
 func DislikeComment(w http.ResponseWriter, r *http.Request) {
        if r.Method == http.MethodPost {
         r.ParseForm()
+        commentIDStr := r.URL.Query().Get("commentID")
         postIDStr := r.URL.Query().Get("postID")
 
 		respChan := make(chan models.ResponseDetails, 1)
@@ -301,7 +303,7 @@ func DislikeComment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		
-		go SendDislikeRequestComment(postIDStr, cookieToken, &wg, respChan)
+		go SendDislikeRequestComment(commentIDStr, cookieToken, &wg, respChan)
         go func() {
             wg.Wait()
             close(respChan)
@@ -323,7 +325,7 @@ func DislikeComment(w http.ResponseWriter, r *http.Request) {
 // Function to send the like/dislike request to the backend
 func SendLikeRequestComment(id string, cookie *http.Cookie, waitGroup *sync.WaitGroup, respChan chan models.ResponseDetails) {
     defer waitGroup.Done()
-    req, err := http.NewRequest("POST", config.BaseApi+"/post/"+id+"/like", nil) 
+    req, err := http.NewRequest("POST", config.BaseApi+"/comment/"+id+"/like", nil) 
     if err != nil {
         respChan <- models.ResponseDetails{Status: http.StatusInternalServerError, Message: "Failed to create request"}
         return
@@ -393,7 +395,7 @@ func SendLikeRequestComment(id string, cookie *http.Cookie, waitGroup *sync.Wait
 func SendDislikeRequestComment(id string, cookie *http.Cookie, waitGroup *sync.WaitGroup, respChan chan models.ResponseDetails) {
     defer waitGroup.Done()
 
-	    req, err := http.NewRequest("POST", config.BaseApi+"/post/"+id+"/dislike", nil) 
+	    req, err := http.NewRequest("POST", config.BaseApi+"/comment/"+id+"/dislike", nil) 
     if err != nil {
         respChan <- models.ResponseDetails{Status: http.StatusInternalServerError, Message: "Failed to create request"}
         return

@@ -3,11 +3,14 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"literary-lions/frontend/src/config"
 	"literary-lions/frontend/src/models"
 	"net/http"
 	"strconv"
+	"sync"
+	"time"
 )
 
 
@@ -21,7 +24,6 @@ func ShowUserProfile(w http.ResponseWriter, r *http.Request) {
 		}{
 			Username:      currentUser,
 		}
-
 		// Render the template with posts and authentication status
 		RenderTemplate(w, "profile.html", data)
 	
@@ -185,4 +187,75 @@ func DeleteUserProfile(w http.ResponseWriter, r *http.Request) {
 
 	// Redirect to the homepage or a confirmation page
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func SendProfileRequest(user models.User, wg *sync.WaitGroup, respChan chan models.ResponseDetails) {
+
+	defer wg.Done()
+
+	jsonData, err := json.Marshal(user)
+	if err != nil {
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintf("error marshaling credentials: %v", err),
+		}
+		return
+	}
+
+	// Define the POST request
+	url := config.BaseApi + "/register"
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintf("error creating request: %v", err),
+		}
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send the POST request
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintf("error sending request: %v", err),
+		}
+		return
+	}
+	defer resp.Body.Close()
+
+	// Read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintf("error reading response: %v", err),
+		}
+		return
+	}
+
+	// Check response status code
+	if resp.StatusCode != http.StatusOK {
+		// Attempt to parse the error message from the response
+		var errorResponse map[string]interface{}
+		var errorMessage string
+		if err := json.Unmarshal(body, &errorResponse); err != nil {
+			errorMessage = string(body) // Use raw body as fallback
+		} else {
+			if errMsg, exists := errorResponse["error"]; exists {
+				errorMessage = fmt.Sprintf("%v", errMsg)
+			} else {
+				errorMessage = "unknown error"
+			}
+		}
+
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintln(errorMessage),
+		}
+		return
+	}
+
 }
