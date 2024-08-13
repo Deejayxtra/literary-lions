@@ -3,7 +3,6 @@ package handlers
 import (
 	"net/http"
 	"sync"
-
 	"literary-lions/frontend/src/config"
 	"literary-lions/frontend/src/models"
 )
@@ -21,6 +20,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Calls the function that sends request to the server
 	go SendLogoutRequest(cookieToken, &wg, respChan)
 
 	// Wait for the goroutine to finish
@@ -29,6 +29,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	
 	sessionStore.Delete(cookieToken.Value)
 
+	// Defines the cookie
 	cookie := http.Cookie{
 		Name:   "session_token",
 		Value:  "",

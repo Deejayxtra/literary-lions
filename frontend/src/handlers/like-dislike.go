@@ -7,11 +7,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"sync"
-
 	"literary-lions/frontend/src/config"
 	"literary-lions/frontend/src/models"
 )
 
+// Method to like posts
 func LikePost(w http.ResponseWriter, r *http.Request) {
     if r.Method == http.MethodPost {
         r.ParseForm()
@@ -33,7 +33,8 @@ func LikePost(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
-		
+
+		// Calls the function that sends request to the server		
 		go SendLikeRequest(postIDStr, cookieToken, &wg, respChan)
         go func() {
             wg.Wait()
@@ -53,7 +54,7 @@ func LikePost(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-
+// Method to dislike posts
 func DislikePost(w http.ResponseWriter, r *http.Request) {
        if r.Method == http.MethodPost {
         r.ParseForm()
@@ -75,7 +76,8 @@ func DislikePost(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
-		
+
+		// Calls the function that sends request to the server		
 		go SendDislikeRequest(postIDStr, cookieToken, &wg, respChan)
         go func() {
             wg.Wait()
@@ -96,9 +98,10 @@ func DislikePost(w http.ResponseWriter, r *http.Request) {
 }
 
 
-// Function to send the like/dislike request to the backend
+// Function to send the like posts request to the backend
 func SendLikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGroup, respChan chan models.ResponseDetails) {
     defer waitGroup.Done()
+    // Creates request to send the the backend 
     req, err := http.NewRequest("POST", config.BaseApi+"/post/"+id+"/like", nil) 
     if err != nil {
         respChan <- models.ResponseDetails{Status: http.StatusInternalServerError, Message: "Failed to create request"}
@@ -106,6 +109,7 @@ func SendLikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGroup, 
     }
 	req.AddCookie(cookie)	// adding cookies to the request
 
+    // Sends request to the server
     client := &http.Client{}
     resp, err := client.Do(req)
     if err != nil {
@@ -114,6 +118,7 @@ func SendLikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGroup, 
     }
     defer resp.Body.Close()
 
+    // Reads the response body 
     body, err := ioutil.ReadAll(resp.Body)
     if err != nil {
         respChan <- models.ResponseDetails{
@@ -123,6 +128,7 @@ func SendLikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGroup, 
         return
     }
 
+    // Checking status if OK
     if resp.StatusCode != http.StatusOK {
         var errorResponse map[string]interface{}
         var errorMessage string
@@ -144,6 +150,7 @@ func SendLikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGroup, 
         return
     }
 
+    // Unmarshals data in JSON format
     var responseMessage map[string]interface{}
     if err := json.Unmarshal(body, &responseMessage); err != nil {
         respChan <- models.ResponseDetails{
@@ -154,6 +161,7 @@ func SendLikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGroup, 
         return
     }
 
+    // Checks if response message is OK
     message, ok := responseMessage["message"].(string)
     if !ok {
         message = "Unexpected response format"
@@ -166,17 +174,18 @@ func SendLikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGroup, 
     }
 }
 
-
+// Function to send the dislike posts request to the backend
 func SendDislikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGroup, respChan chan models.ResponseDetails) {
     defer waitGroup.Done()
-
-	    req, err := http.NewRequest("POST", config.BaseApi+"/post/"+id+"/dislike", nil) 
+    // Creates request to send the the backend 
+	req, err := http.NewRequest("POST", config.BaseApi+"/post/"+id+"/dislike", nil) 
     if err != nil {
         respChan <- models.ResponseDetails{Status: http.StatusInternalServerError, Message: "Failed to create request"}
         return
     }
 	req.AddCookie(cookie)	// adding cookies to the request
 
+    // Sends request to the server
     client := &http.Client{}
     resp, err := client.Do(req)
     if err != nil {
@@ -185,6 +194,7 @@ func SendDislikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGrou
     }
     defer resp.Body.Close()
 
+    // Reads the response body
     body, err := ioutil.ReadAll(resp.Body)
     if err != nil {
         respChan <- models.ResponseDetails{
@@ -194,6 +204,7 @@ func SendDislikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGrou
         return
     }
 
+    // Checking status if OK
     if resp.StatusCode != http.StatusOK {
         var errorResponse map[string]interface{}
         var errorMessage string
@@ -215,6 +226,7 @@ func SendDislikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGrou
         return
     }
 
+    // Unmarshals data in JSON format
     var responseMessage map[string]interface{}
     if err := json.Unmarshal(body, &responseMessage); err != nil {
         respChan <- models.ResponseDetails{
@@ -225,6 +237,7 @@ func SendDislikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGrou
         return
     }
 
+    // Checks the response message if OK
     message, ok := responseMessage["message"].(string)
     if !ok {
         message = "Unexpected response format"
@@ -237,8 +250,9 @@ func SendDislikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGrou
     }
 }
 
-
+// Method to like comments
 func LikeComment(w http.ResponseWriter, r *http.Request) {
+    // Method for POST request to like comments
     if r.Method == http.MethodPost {
         r.ParseForm()
         commentIDStr := r.URL.Query().Get("commentID")
@@ -260,7 +274,8 @@ func LikeComment(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
-		
+
+		// Calls the function that sends request to the server
 		go SendLikeRequestComment(commentIDStr, cookieToken, &wg, respChan)
         go func() {
             wg.Wait()
@@ -268,7 +283,7 @@ func LikeComment(w http.ResponseWriter, r *http.Request) {
         }()
         
         responseDetails := <-respChan
-
+        // Checks the status if OK
         if responseDetails.Status == http.StatusOK {
            http.Redirect(w, r, "/post?id="+postIDStr+"/#comment-"+commentIDStr, http.StatusSeeOther)
         } else {
@@ -280,8 +295,10 @@ func LikeComment(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-func DislikeComment(w http.ResponseWriter, r *http.Request) {
-       if r.Method == http.MethodPost {
+// Method to dislike comments
+func DislikeComment(w http.ResponseWriter, r *http.Request) {  
+    // Method for POST request to dislike comments
+    if r.Method == http.MethodPost {
         r.ParseForm()
         commentIDStr := r.URL.Query().Get("commentID")
         postIDStr := r.URL.Query().Get("postID")
@@ -302,7 +319,8 @@ func DislikeComment(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
-		
+
+		// Calls the function that sends request to the server		
 		go SendDislikeRequestComment(commentIDStr, cookieToken, &wg, respChan)
         go func() {
             wg.Wait()
@@ -311,6 +329,7 @@ func DislikeComment(w http.ResponseWriter, r *http.Request) {
         
         responseDetails := <-respChan
 
+        // Checks the status if OK
         if responseDetails.Status == http.StatusOK {
             http.Redirect(w, r, "/post?id="+postIDStr+"/#comment-"+commentIDStr, http.StatusSeeOther)
         } else {
@@ -322,9 +341,10 @@ func DislikeComment(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-// Function to send the like/dislike request to the backend
+// Function to send the like comments request to the backend
 func SendLikeRequestComment(id string, cookie *http.Cookie, waitGroup *sync.WaitGroup, respChan chan models.ResponseDetails) {
     defer waitGroup.Done()
+    // Creates request to send the the backend 
     req, err := http.NewRequest("POST", config.BaseApi+"/comment/"+id+"/like", nil) 
     if err != nil {
         respChan <- models.ResponseDetails{Status: http.StatusInternalServerError, Message: "Failed to create request"}
@@ -332,6 +352,7 @@ func SendLikeRequestComment(id string, cookie *http.Cookie, waitGroup *sync.Wait
     }
 	req.AddCookie(cookie)	// adding cookies to the request
 
+    // Sends request to the server
     client := &http.Client{}
     resp, err := client.Do(req)
     if err != nil {
@@ -340,6 +361,7 @@ func SendLikeRequestComment(id string, cookie *http.Cookie, waitGroup *sync.Wait
     }
     defer resp.Body.Close()
 
+    // Reads the response body 
     body, err := ioutil.ReadAll(resp.Body)
     if err != nil {
         respChan <- models.ResponseDetails{
@@ -349,6 +371,7 @@ func SendLikeRequestComment(id string, cookie *http.Cookie, waitGroup *sync.Wait
         return
     }
 
+    // Checks the status if OK
     if resp.StatusCode != http.StatusOK {
         var errorResponse map[string]interface{}
         var errorMessage string
@@ -371,6 +394,7 @@ func SendLikeRequestComment(id string, cookie *http.Cookie, waitGroup *sync.Wait
     }
 
     var responseMessage map[string]interface{}
+    // Unmarshals data in JSON format
     if err := json.Unmarshal(body, &responseMessage); err != nil {
         respChan <- models.ResponseDetails{
             Success: false,
@@ -380,6 +404,7 @@ func SendLikeRequestComment(id string, cookie *http.Cookie, waitGroup *sync.Wait
         return
     }
 
+    // Check the response message if OK
     message, ok := responseMessage["message"].(string)
     if !ok {
         message = "Unexpected response format"
@@ -392,16 +417,18 @@ func SendLikeRequestComment(id string, cookie *http.Cookie, waitGroup *sync.Wait
     }
 }
 
+// Function to send the dislike comments request to the backend
 func SendDislikeRequestComment(id string, cookie *http.Cookie, waitGroup *sync.WaitGroup, respChan chan models.ResponseDetails) {
     defer waitGroup.Done()
-
-	    req, err := http.NewRequest("POST", config.BaseApi+"/comment/"+id+"/dislike", nil) 
+    // Creates request to send the the backend 
+	req, err := http.NewRequest("POST", config.BaseApi+"/comment/"+id+"/dislike", nil) 
     if err != nil {
         respChan <- models.ResponseDetails{Status: http.StatusInternalServerError, Message: "Failed to create request"}
         return
     }
 	req.AddCookie(cookie)	// adding cookies to the request
 
+    // Sends request to the server
     client := &http.Client{}
     resp, err := client.Do(req)
     if err != nil {
@@ -410,6 +437,7 @@ func SendDislikeRequestComment(id string, cookie *http.Cookie, waitGroup *sync.W
     }
     defer resp.Body.Close()
 
+    // Reads the response body 
     body, err := ioutil.ReadAll(resp.Body)
     if err != nil {
         respChan <- models.ResponseDetails{
@@ -419,6 +447,7 @@ func SendDislikeRequestComment(id string, cookie *http.Cookie, waitGroup *sync.W
         return
     }
 
+    // Checks the status if OK
     if resp.StatusCode != http.StatusOK {
         var errorResponse map[string]interface{}
         var errorMessage string
@@ -441,6 +470,7 @@ func SendDislikeRequestComment(id string, cookie *http.Cookie, waitGroup *sync.W
     }
 
     var responseMessage map[string]interface{}
+    // Unmarshals data in JSON format
     if err := json.Unmarshal(body, &responseMessage); err != nil {
         respChan <- models.ResponseDetails{
             Success: false,
@@ -450,6 +480,7 @@ func SendDislikeRequestComment(id string, cookie *http.Cookie, waitGroup *sync.W
         return
     }
 
+    // Check the response message if OK
     message, ok := responseMessage["message"].(string)
     if !ok {
         message = "Unexpected response format"

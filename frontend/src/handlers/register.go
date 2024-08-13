@@ -6,11 +6,9 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"sync"
 	"time"
-
 	"literary-lions/frontend/src/config"
 	"literary-lions/frontend/src/models"
 )
@@ -54,8 +52,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		var responseDetails models.ResponseDetails
 		select {
 		case responseDetails = <-respChan:
-			// Handle response details
-			fmt.Println("Response:", responseDetails.Message)
+		// Handle response details
 		case <-time.After(10 * time.Second):
 			responseDetails = models.ResponseDetails{
 				Success: false,
@@ -71,9 +68,9 @@ func Register(w http.ResponseWriter, r *http.Request) {
 			Message: responseDetails.Message,
 		}
 
+		// Handles error from rendering template
 		if err := tmpl.Execute(w, data); err != nil {
 			http.Error(w, "Error rendering template", http.StatusInternalServerError)
-			log.Fatalf("Error rendering template: %v", err)
 		}
 	} else {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -82,7 +79,6 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 // SendRegistrationRequest
 func SendRegistrationRequest(credentials models.Credentials, wg *sync.WaitGroup, respChan chan models.ResponseDetails) {
-
 	defer wg.Done() // Notify the wait group when this goroutine completes
 
 	// Marshal the user object to JSON.
@@ -144,6 +140,7 @@ func SendRegistrationRequest(credentials models.Credentials, wg *sync.WaitGroup,
 			}
 		}
 
+		// Saves the response from server to response channel
 		respChan <- models.ResponseDetails{
 			Success: false,
 			Message: fmt.Sprintln(errorMessage),
@@ -167,6 +164,7 @@ func SendRegistrationRequest(credentials models.Credentials, wg *sync.WaitGroup,
 		message = "Unexpected response format"
 	}
 
+	// Saves the response from server to response channel
 	respChan <- models.ResponseDetails{
 		Success: true,
 		Message: fmt.Sprintln(message), // displays server response to the user

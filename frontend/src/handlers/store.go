@@ -20,6 +20,7 @@ type SessionStore struct {
     filename string
 }
 
+// Stores or initialize new session
 func NewSessionStore(filename string) *SessionStore {
     absPath, err := filepath.Abs(filename)
     if err != nil {
@@ -34,6 +35,7 @@ func NewSessionStore(filename string) *SessionStore {
     return store
 }
 
+// Writes data into store
 func (store *SessionStore) Set(token, username, email string) {
     store.mu.Lock()
     store.sessions[token] = UserSession{Username: username, Email: email}
@@ -48,6 +50,7 @@ func (store *SessionStore) Set(token, username, email string) {
     }()
 }
 
+// Reads data from store
 func (store *SessionStore) Get(token string) (UserSession, bool) {
     store.mu.RLock()
     defer store.mu.RUnlock()
@@ -55,6 +58,7 @@ func (store *SessionStore) Get(token string) (UserSession, bool) {
     return session, exists
 }
 
+// Removes data from store
 func (store *SessionStore) Delete(token string) {
     store.mu.Lock()
     delete(store.sessions, token)
@@ -69,6 +73,7 @@ func (store *SessionStore) Delete(token string) {
     }()
 }
 
+// Saves data to file
 func (store *SessionStore) SaveToFile() error {
     store.mu.RLock()
     defer store.mu.RUnlock()
@@ -83,6 +88,7 @@ func (store *SessionStore) SaveToFile() error {
     return nil
 }
 
+// Loads data from file
 func (store *SessionStore) LoadFromFile() {
     store.mu.Lock()
     defer store.mu.Unlock()
@@ -102,4 +108,5 @@ func (store *SessionStore) LoadFromFile() {
     }
 }
 
+// initializes session store
 var sessionStore = NewSessionStore("sessions.json")

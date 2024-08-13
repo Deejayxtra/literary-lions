@@ -11,6 +11,7 @@ func isAuthenticated(r *http.Request) (string, bool) {
 		return "", false
 	}
 
+	// Check if user session exists
 	token := cookie.Value
 	user, exists := sessionStore.Get(token)
 	if !exists {

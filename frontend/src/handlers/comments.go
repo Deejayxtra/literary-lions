@@ -8,12 +8,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"sync"
-
 	"literary-lions/frontend/src/config"
 	"literary-lions/frontend/src/models"
 )
 
+// Method to add comment to posts
 func AddComment(w http.ResponseWriter, r *http.Request) {
+	// Extract the post query parameter from the URL
 	postID := r.URL.Query().Get("postID")
 
 	if r.Method == http.MethodPost {
@@ -31,7 +32,6 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 		// Extract the session cookie from the header
 		cookieToken, err := r.Cookie("session_token")
 		if err != nil {
-			// http.Error(w, "Failed to get session cookie", http.StatusUnauthorized)
 			// User must be logged-in to continue
 			message := `You are not authorized! Please <a href="/login">login</a> before adding comment.`
 			tmpl := template.Must(template.ParseFiles("templates/post.html"))
@@ -41,6 +41,7 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Calls the function that sends request to the server
 		wg.Add(1)
 		go func() {
 			SendAddCommentRequest(cookieToken, payload, &wg, respChan)
@@ -53,6 +54,7 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 
 		responseDetails := <-respChan
 
+		// Checks the http status created if OK
 		if responseDetails.Status == http.StatusCreated {
 			http.Redirect(w, r, "post?id="+postID, http.StatusSeeOther)
 		} else if responseDetails.Status == http.StatusUnauthorized {
@@ -74,7 +76,7 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 }
 
 func SendAddCommentRequest(cookie *http.Cookie, payload models.Comment, waitGroup *sync.WaitGroup, respChan chan models.ResponseDetails) {
-	defer waitGroup.Done()
+	defer waitGroup.Done() // Ensure the channel is closed once this function completes
 	// Convert payload to JSON
 	commentData, err := json.Marshal(payload)
 	if err != nil {

@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
-	"literary-lions/frontend/src/config"
-	"literary-lions/frontend/src/models"
 	"net/http"
 	"sync"
 	"unicode/utf8"
+	"literary-lions/frontend/src/config"
+	"literary-lions/frontend/src/models"
 )
 
 // Helper function to truncate post content to 150 characters
@@ -22,7 +22,7 @@ func truncateContent(content string, limit int) string {
 	return content
 }
 
-// display posts.
+// Display posts.
 func ShowPosts(w http.ResponseWriter, r *http.Request) {
 	// Make an HTTP GET request to the /api/posts endpoint
 	resp, err := http.Get(config.BaseApi + "/posts")
@@ -75,7 +75,7 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// display posts by category.
+// Display posts by category.
 func ShowPostsByCategory(w http.ResponseWriter, r *http.Request) {
 	// Extract the category query parameter from the URL
 	category := r.URL.Query().Get("category")
@@ -226,10 +226,10 @@ func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 
 
 func CreatePost(w http.ResponseWriter, r *http.Request) {
-
 	// Get the authentication status and the currentUser if any
 	currentUser, authenticated := isAuthenticated(r)
 
+	// Renders page to user to select from category
 	if r.Method == http.MethodGet {
 		// Hardcoded categories for now. Might be nice to add feature for creating it and make it dynamic later
 		categories := []string{"Random", "News", "Sport", "Technology", "Science", "Health"}
@@ -255,6 +255,7 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 		respChan := make(chan models.ResponseDetails, 1)
 		var wg sync.WaitGroup
 
+		// Defines the paylod sent to the backend
 		payload := models.Post{
 			Category: category,
 			Title:    title,
@@ -264,7 +265,6 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 		// Extract the session cookie from the header
 		cookieToken, err := r.Cookie("session_token")
 		if err != nil {
-			// http.Error(w, "Failed to get session cookie", http.StatusUnauthorized)
 			// User must be logged-in to continue
 			message := `You are not authorized! Please <a href="/login">login</a> before creating a post.`
 			tmpl := template.Must(template.ParseFiles("templates/create-post.html"))
@@ -274,6 +274,7 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Calls the function that sends request to the server
 		wg.Add(1)
 		go func() {
 			SendCreatePostRequest(cookieToken, payload, &wg, respChan)
@@ -307,7 +308,7 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func SendCreatePostRequest(cookie *http.Cookie, payload models.Post, waitGroup *sync.WaitGroup, respChan chan models.ResponseDetails) {
-	defer waitGroup.Done()
+	defer waitGroup.Done()	// Ensure the channel is closed once this function completes
 
 	// Convert payload to JSON
 	postData, err := json.Marshal(payload)

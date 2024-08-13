@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
-	"literary-lions/frontend/src/config"
-	"literary-lions/frontend/src/models"
 	"log"
 	"net/http"
 	"sync"
 	"time"
+	"literary-lions/frontend/src/config"
+	"literary-lions/frontend/src/models"
 )
 
 func ShowUserProfile(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +27,6 @@ func ShowUserProfile(w http.ResponseWriter, r *http.Request) {
 	// Retrieve session token from cookies
 	cookie, err := r.Cookie("session_token")
 	if err != nil {
-		log.Print("Error retrieving session token: ", err.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
@@ -93,6 +92,7 @@ func UpdateUserProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Renders page to the user to update profile
 	if r.Method == http.MethodGet {
 		data := struct {
 			Username string
@@ -121,6 +121,7 @@ func UpdateUserProfile(w http.ResponseWriter, r *http.Request) {
 			Username: username,
 		}
 
+		// Calls the function that sends request to the server
 		go func() {
 			SendUpdateUserProfile(cookie, credentials, respChan)
 		}()
@@ -199,9 +200,9 @@ func DeleteUserProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 func SendProfileRequest(user models.User, wg *sync.WaitGroup, respChan chan models.ResponseDetails) {
+	defer wg.Done()	// Ensure the channel is closed once this function completes
 
-	defer wg.Done()
-
+	// Format data to JSON format  
 	jsonData, err := json.Marshal(user)
 	if err != nil {
 		respChan <- models.ResponseDetails{
@@ -221,6 +222,7 @@ func SendProfileRequest(user models.User, wg *sync.WaitGroup, respChan chan mode
 		}
 		return
 	}
+	// Request Header
 	req.Header.Set("Content-Type", "application/json")
 
 	// Send the POST request
@@ -271,9 +273,7 @@ func SendProfileRequest(user models.User, wg *sync.WaitGroup, respChan chan mode
 
 func SendUpdateUserProfile(cookie *http.Cookie, user models.User, respChan chan models.ResponseDetails) {
 	defer close(respChan) // Ensure the channel is closed once this function completes
-
-	// token := cookie.Value
-
+	// Mashalls data to JSON format
 	jsonData, err := json.Marshal(user)
 	if err != nil {
 		respChan <- models.ResponseDetails{
@@ -294,8 +294,8 @@ func SendUpdateUserProfile(cookie *http.Cookie, user models.User, respChan chan 
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
-	// req.Header.Set("Authorization", "Bearer " +token)
-		// Set the session cookie in the request
+
+	// Set the session cookie in the request
 	req.AddCookie(cookie)
 
 	// Send the PUT request

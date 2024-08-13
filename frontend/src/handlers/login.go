@@ -6,11 +6,9 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"sync"
 	"time"
-
 	"literary-lions/frontend/src/config"
 	"literary-lions/frontend/src/models"
 )
@@ -37,6 +35,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		var wg sync.WaitGroup
 		wg.Add(1)
 
+		// Calls the function that sends request to the server
 		go SendLoginRequest(credentials, &wg, respChan)
 
 		// Wait for the goroutine to finish
@@ -65,9 +64,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, "/", http.StatusSeeOther)
 				return
 			} else {
-				// Log the failure reason
-				log.Printf("Login failed: %s", response.Message)
-
 				// Display error notification in case of login failure
 				tmpl := template.Must(template.ParseFiles("templates/login.html"))
 				tmpl.Execute(w, map[string]interface{}{
@@ -84,7 +80,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 // SendLoginRequest
 func SendLoginRequest(credentials models.Credentials, wg *sync.WaitGroup, respChan chan models.AuthResponse) {
-
 	defer wg.Done()
 
 	// Convert credentials to JSON
@@ -98,7 +93,6 @@ func SendLoginRequest(credentials models.Credentials, wg *sync.WaitGroup, respCh
 	}
 
 	// Create a POST request
-	// req, err := http.NewRequest(http.MethodPost, "http://localhost:8888/login", bytes.NewBuffer(jsonData))
 	req, err := http.NewRequest(http.MethodPost, config.BaseApi+"/login", bytes.NewBuffer(jsonData))
 	if err != nil {
 		respChan <- models.AuthResponse{
@@ -108,6 +102,7 @@ func SendLoginRequest(credentials models.Credentials, wg *sync.WaitGroup, respCh
 		return
 	}
 
+	// Request Header
 	req.Header.Set("Content-Type", "application/json")
 
 	// Send the request

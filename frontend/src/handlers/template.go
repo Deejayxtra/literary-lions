@@ -15,7 +15,7 @@ func RenderTemplate(w http.ResponseWriter, tmplName string, data interface{}) {
 		log.Println(err)
 		return
 	}
-
+	// Error handling for render template
 	err = tmpl.Execute(w, data)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)

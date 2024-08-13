@@ -20,7 +20,6 @@ func main() {
 	http.HandleFunc("/profile", handlers.ShowUserProfile)
 	http.HandleFunc("/update-profile", handlers.UpdateUserProfile)
 	http.HandleFunc("/delete-profile", handlers.DeleteUserProfile)
-
 	http.HandleFunc("/register", handlers.Register)
 	http.HandleFunc("/login", handlers.LoginHandler)
 	http.HandleFunc("/logout-handler", handlers.Logout)

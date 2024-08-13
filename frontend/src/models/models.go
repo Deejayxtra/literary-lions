@@ -1,10 +1,7 @@
 package models
 
 import (
-	"errors"
 	"time"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 type Credentials struct {
@@ -99,35 +96,4 @@ type Message struct {
 type Data struct {
 	Posts         []Post
 	Authenticated bool
-}
-
-// AuthenticateUser simulates user authentication.
-func AuthenticateUser(email, password string) (*User, error) {
-	// Example: hardcoded user for demonstration purposes
-	if email == "test@example.com" {
-		return &User{
-			ID:       1,
-			Email:    email,
-			Username: "testuser",
-			Password: "$2a$10$1yII3Pq/4FbDsZz5l4P2oOkKhCzI053GcP2LHKFvw1PeFNErc4Bd2", // bcrypt hash for "password123"
-		}, nil
-	}
-	return nil, errors.New("user not found")
-}
-
-func (user *User) CheckPassword(password string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	return err == nil
-}
-
-// GetUserByEmail retrieves a user by email from your database.
-func GetUserByEmail(email string) (*User, error) {
-	// Implement this function to retrieve a user by email from your database
-	// This is just a placeholder
-	return &User{
-		Email:    "test@example.com",
-		Username: "testuser",
-		// Password: "Ud21wC+n/y0I27JcwIEGRA==",
-		Password: "$2a$10$1yII3Pq/4FbDsZz5l4P2oOkKhCzI053GcP2LHKFvw1PeFNErc4Bd2", // bcrypt hash of "password"
-	}, nil
 }
