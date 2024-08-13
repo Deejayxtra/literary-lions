@@ -5,30 +5,42 @@ import (
 	"database/sql"
 	"log"
 	"time"
-
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
 )
 
+// InitDB initializes the database connection, sets up tables, and creates a default admin user.
+// Returns a pointer to the database connection and an error if any.
 func InitDB() (*sql.DB, error) {
+    // Open a connection to the SQLite database file
 	db, err := sql.Open("sqlite3", "./literary_lions.db")
 	if err != nil {
-		return nil, err
+		return nil, err // Return the error if the database connection fails
 	}
 
+	// Create a context with a timeout to avoid hanging if the database doesn't respond
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	defer cancel() // Ensure the context is canceled to free up resources
 
+	// Ping the database to verify the connection is alive
 	if err := db.PingContext(ctx); err != nil {
-		return nil, err
+		return nil, err // Return the error if the ping fails
 	}
 
+	// Create necessary tables if they don't already exist
 	createTables(db)
+
+	// Create a default admin user if one doesn't already exist
 	createDefaultAdmin(db)
+
+	// Return the database connection
 	return db, nil
 }
 
+// createTables creates the necessary tables for the application if they don't already exist.
+// It accepts a pointer to the database connection.
 func createTables(db *sql.DB) {
+    // List of SQL statements to create tables
 	tables := []string{
 		`CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -100,26 +112,36 @@ func createTables(db *sql.DB) {
         )`,
 	}
 
+	// Iterate over the table creation statements and execute them
 	for _, table := range tables {
 		_, err := db.Exec(table)
 		if err != nil {
-			log.Fatalf("Could not create table: %v", err)
+			log.Fatalf("Could not create table: %v", err) // Log and exit if any table creation fails
 		}
 	}
 }
 
+// createDefaultAdmin creates a default admin user if one does not already exist in the database.
+// It accepts a pointer to the database connection.
 func createDefaultAdmin(db *sql.DB) {
 	var username string
+
+	// Check if the admin user already exists by querying the database
 	err := db.QueryRow("SELECT username FROM users WHERE username = 'admin'").Scan(&username)
 
+	// If the admin user does not exist, create one
 	if err == sql.ErrNoRows {
+		// Generate a hashed password for the admin user
 		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
-		_, err := db.Exec("INSERT INTO users (email, username, password, role) VALUES (?, ?, ?, 'admin')", "admin@mail.com", "admin", hashedPassword)
+
+		// Insert the admin user into the database
+		_, err := db.Exec("INSERT INTO users (email, username, password, role) VALUES (?, ?, ?, 'admin')",
+			"admin@mail.com", "admin", hashedPassword)
 		if err != nil {
-			log.Fatalf("Could not create admin user: %v", err)
+			log.Fatalf("Could not create admin user: %v", err) // Log and exit if the admin creation fails
 		}
-		log.Println("Default admin user created")
+		log.Println("Default admin user created") // Log success if the admin is created
 	} else if err != nil {
-		log.Fatalf("Could not check admin user: %v", err)
+		log.Fatalf("Could not check admin user: %v", err) // Log and exit if the user check fails for any other reason
 	}
 }

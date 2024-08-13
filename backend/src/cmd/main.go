@@ -7,7 +7,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-
 	_ "literary-lions/backend/docs"
 	"literary-lions/backend/src/internal/db"
 	"literary-lions/backend/src/internal/handlers"
