@@ -67,30 +67,34 @@ func AddComment(c *gin.Context) {
 // @Router /api/post [post]
 // @Security ApiKeyAuth
 func CreatePost(c *gin.Context) {
-
+	// Checks if user is authorised to perform this action
 	userID, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
+	// Creating type of data (Struct) required for this action
 	var post struct {
 		Title    string `json:"title" binding:"required"`
 		Content  string `json:"content" binding:"required"`
 		Category string `json:"category" binding:"required"`
 	}
 
+	// Checks if request is a valid JSON request
 	if err := c.ShouldBindJSON(&post); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 		return
 	}
 
+	// Calls the method to execute the request
 	err := models.CreatePost(userID.(int), post.Title, post.Content, post.Category)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	// Returns the final response to the client side if successful
 	c.JSON(http.StatusCreated, gin.H{"message": "Post created successfully"})
 }
 

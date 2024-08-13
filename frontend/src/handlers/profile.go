@@ -10,11 +10,9 @@ import (
 	"literary-lions/frontend/src/models"
 	"log"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 )
-
 
 func ShowUserProfile(w http.ResponseWriter, r *http.Request) {
 	// Get the authentication status and the currentUser if any
@@ -66,75 +64,102 @@ func ShowUserProfile(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 }
 
-
 func UpdateUserProfile(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+	// Check if the user is authenticated
+	currentUser, authenticated := isAuthenticated(r)
+	if !authenticated {
+		http.Error(w, "User not authenticated", http.StatusUnauthorized)
 		return
 	}
 
-	// Parse the form data
-	err := r.ParseForm()
+	// Retrieve session token from cookies
+	cookie, err := r.Cookie("session_token")
 	if err != nil {
-		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
+		log.Print("Error retrieving session token: ", err.Error())
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	// Convert the user ID from string to integer
-	userID, err := strconv.Atoi(r.FormValue("id"))
-	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+	// Get user details from session store using the token
+	token := cookie.Value
+	userData, exists := sessionStore.Get(token)
+	if !exists {
+		// If the user does not exist in the session store, redirect to login
+		message := `You are not authorized! Please <a href="/login">login</a> before accessing your profile.`
+		tmpl := template.Must(template.ParseFiles("templates/profile.html"))
+		tmpl.Execute(w, map[string]interface{}{
+			"Error": template.HTML(message),
+		})
 		return
 	}
 
-	// Create a User struct from the form data
-	user := models.User{
-		ID:         userID,
-		Username:   r.FormValue("username"),
-		Email:      r.FormValue("email"),
-	//	ProfilePic: r.FormValue("profile_pic"),
-	}
+	if r.Method == http.MethodGet {
+		data := struct {
+			Username string
+			Email    string
+		}{
+			Username: currentUser,
+			Email:    userData.Email,
+		} 
+		
+		// Render the profile template with the user's data
+		RenderTemplate(w, "profile-update.html", data)
+		return
+	} 
 
-	// Convert the User struct to JSON
-	userData, err := json.Marshal(user)
-	if err != nil {
-		http.Error(w, "Failed to encode user data", http.StatusInternalServerError)
+	// Handle POST request to process the update form submission
+	if r.Method == http.MethodPost {
+		// Extract credentials from form values
+		email := r.FormValue("email")
+		username := r.FormValue("username")
+
+		respChan := make(chan models.ResponseDetails, 1)
+
+		// Sample credentials
+		credentials := models.User{
+			Email:    email,
+			Username: username,
+		}
+
+		go func() {
+			SendUpdateUserProfile(cookie, credentials, respChan)
+		}()
+
+		select {
+		case response := <-respChan:
+			if response.Success {
+				// Update the session store with new data
+				sessionStore.Set(token, response.Username, response.Email)
+				http.Redirect(w, r, "/profile", http.StatusSeeOther)
+				return
+			} else {
+				// Pass error message to template
+				tmpl := template.Must(template.ParseFiles("templates/profile.html"))
+				data := struct {
+					Error   string
+					Email   string
+					Username string
+				}{
+					Error:    response.Message,
+					Email:    email,
+					Username: username,
+				}
+				if err := tmpl.Execute(w, data); err != nil {
+					http.Error(w, "Error rendering template", http.StatusInternalServerError)
+					log.Fatalf("Error rendering template: %v", err)
+				}
+			}
+		case <-time.After(10 * time.Second):
+			// Handle the case where the operation times out
+			http.Error(w, "Profile update timed out", http.StatusGatewayTimeout)
+		}
 		return
 	}
 
-	// Create a new POST request to the API to update the user profile
-	req, err := http.NewRequest("POST", config.BaseApi+"/user/update", bytes.NewBuffer(userData))
-	if err != nil {
-		http.Error(w, "Failed to create request", http.StatusInternalServerError)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	// Use an http.Client to make the request
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		http.Error(w, "Failed to update user profile", http.StatusInternalServerError)
-		return
-	}
-	defer resp.Body.Close()
-
-	// Read the response body
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		http.Error(w, "Failed to read response", http.StatusInternalServerError)
-		return
-	}
-
-	// Check for errors in the API response
-	if resp.StatusCode != http.StatusOK {
-		http.Error(w, string(body), resp.StatusCode)
-		return
-	}
-
-	// Redirect to the profile page
-	http.Redirect(w, r, "/profile?id="+r.FormValue("id"), http.StatusSeeOther)
+	// If the method is neither GET nor POST, return an error
+	http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 }
+
 
 // DeleteUserProfile handles deleting a user's profile
 func DeleteUserProfile(w http.ResponseWriter, r *http.Request) {
@@ -242,4 +267,105 @@ func SendProfileRequest(user models.User, wg *sync.WaitGroup, respChan chan mode
 		return
 	}
 
+}
+
+func SendUpdateUserProfile(cookie *http.Cookie, user models.User, respChan chan models.ResponseDetails) {
+	defer close(respChan) // Ensure the channel is closed once this function completes
+
+	// token := cookie.Value
+
+	jsonData, err := json.Marshal(user)
+	if err != nil {
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintf("error marshaling credentials: %v", err),
+		}
+		return
+	}
+
+	// Define the PUT request
+	url := config.BaseApi + "/userprofile-update" // Update endpoint in the server side
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintf("error creating request: %v", err),
+		}
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	// req.Header.Set("Authorization", "Bearer " +token)
+		// Set the session cookie in the request
+	req.AddCookie(cookie)
+
+	// Send the PUT request
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintf("error sending request: %v", err),
+		}
+		return
+	}
+	defer resp.Body.Close()
+
+	// Read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintf("error reading response: %v", err),
+		}
+		return
+	}
+
+	// Check response status code
+	if resp.StatusCode != http.StatusOK {
+		var errorResponse map[string]interface{}
+		var errorMessage string
+		if err := json.Unmarshal(body, &errorResponse); err != nil {
+			errorMessage = string(body) // Use raw body as fallback
+		} else {
+			if errMsg, exists := errorResponse["error"]; exists {
+				errorMessage = fmt.Sprintf("%v", errMsg)
+			} else {
+				errorMessage = "unknown error"
+			}
+		}
+
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintln(errorMessage),
+		}
+		return
+	}
+
+	// Optionally, you can further process the response body if needed
+	var responseMessage map[string]interface{}
+	if err := json.Unmarshal(body, &responseMessage); err != nil {
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: fmt.Sprintf("error unmarshaling response: %v", err),
+		}
+		return
+	}
+
+	username, usernameOK := responseMessage["username"].(string)
+	email, emailOK := responseMessage["email"].(string)
+	if !usernameOK || !emailOK {
+		respChan <- models.ResponseDetails{
+			Success: false,
+			Message: "Invalid response from authentication server",
+		}
+		return
+	}
+
+	// Handle successful response
+	respChan <- models.ResponseDetails{
+		Success: true,
+		Message: "Profile updated successfully!",
+		Username: username,
+		Email:	  email,
+	}
 }

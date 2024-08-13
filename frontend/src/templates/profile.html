@@ -19,15 +19,14 @@
         <div class="profile-container">
             <img src="/static/img/pic.jpg" alt="Profile Picture" class="profile-pic">
             <h2>{{.Username}}</h2>
-            <h2>{{.Email}}</h2>
-        
-            <form action="/update_profile" method="POST">
-  
-            </form>
-        
-            <form action="/delete_profile" method="POST">
+            <h3>{{.Email}}</h3>
 
-            </form>
+            <footer>
+                <p><h4><a href="/update-profile">Profile Update</a></h4></p>
+            </footer>
+
+            <!-- <form action="/delete-profile" method="POST"></form>  -->
+
         </div>
     </main>
     <footer>

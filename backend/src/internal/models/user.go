@@ -1,9 +1,10 @@
-
 package models
 
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -64,4 +65,21 @@ func GetUser(userID int) (*User, error) {
 	}
 
 	return user, nil
+}
+
+func ProfileUpdate(userID int, email, username string) error {
+	// Prepare the SQL statement
+	stmt, err := db.Prepare("UPDATE users SET email = ?, username = ? WHERE id = ?")
+	if err != nil {
+		return fmt.Errorf("failed to prepare SQL statement: %w", err)
+	}
+	defer stmt.Close()
+
+	// Execute the SQL statement
+	_, err = stmt.Exec(email, username, userID)
+	if err != nil {
+		return fmt.Errorf("failed to execute SQL statement: %w", err)
+	}
+
+	return nil
 }

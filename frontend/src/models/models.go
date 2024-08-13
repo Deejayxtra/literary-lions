@@ -17,6 +17,8 @@ type ResponseDetails struct {
 	Success   bool
 	Message   string
 	Status    int
+	Username  string
+	Email     string
 }
 
 type AuthResponse struct {
