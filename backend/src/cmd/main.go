@@ -64,6 +64,7 @@ func main() {
 		api.PUT("/post/:id", handlers.UpdatePost)          // Update a specific post by ID
 		api.DELETE("/post/:id", handlers.DeletePost)       // Delete a specific post by ID
 		api.POST("/post/:id/comment", handlers.AddComment) // Add a comment to a specific post by ID
+		api.PUT("/userprofile-update", handlers.UpdateUserProfile)	// Update user profile
 
 		// Likes and dislikes for posts
 		api.POST("/post/:id/like", handlers.LikePost)             // Like a specific post by ID
