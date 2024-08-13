@@ -1,9 +1,13 @@
 package handlers
 
 import (
-	"net/http"
-	"github.com/gin-gonic/gin"
+	"database/sql"
 	"literary-lions/backend/src/internal/models"
+	"literary-lions/backend/src/internal/utils"
+	"net/http"
+	"regexp"
+
+	"github.com/gin-gonic/gin"
 )
 
 // AuthMiddleware is a middleware function that checks if the user is authenticated
@@ -47,28 +51,61 @@ func AuthMiddleware(requiredRole string) gin.HandlerFunc {
 // @Failure 400 {object} gin.H
 // @Failure 401 {object} gin.H
 // @Router /login [post]
+
 // Login handles user authentication and session creation.
 func Login(c *gin.Context) {
 	var creds Credentials
+
 	// Bind the incoming JSON payload to the creds variable
 	if err := c.ShouldBindJSON(&creds); err != nil {
-		// If the request payload is invalid, return a bad request error
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 		return
 	}
 
-	// Authenticate the user with the provided email and password
-	user, err := models.AuthenticateUser(creds.Email, creds.Password)
+	// Validate the email format
+	if !isValidEmail(creds.Email) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid email format"})
+		return
+	}
+
+	// Open a database connection
+	db, err := sql.Open("sqlite3", "literary_lions.db")
 	if err != nil {
-		// If authentication fails, return an unauthorized error
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to connect to the database"})
+		return
+	}
+	defer db.Close()
+
+	// Begin a transaction
+	tx, err := db.Begin()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to begin database transaction"})
+		return
+	}
+	defer tx.Rollback()
+
+	// Check if the user exists
+	user, err := models.FindUserByEmail(tx, creds.Email)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User does not exist"})
+		return
+	}
+
+	// Check if the password is correct using the utils package
+	if !utils.CheckPassword(user.Password, creds.Password) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Incorrect password"})
+		return
+	}
+
+	// Commit the transaction
+	if err := tx.Commit(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction"})
 		return
 	}
 
 	// Create a session token for the authenticated user
 	token, err := models.CreateSession(user.ID)
 	if err != nil {
-		// If session creation fails, return an internal server error
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create session"})
 		return
 	}
@@ -78,6 +115,12 @@ func Login(c *gin.Context) {
 
 	// Respond with the session token and user details
 	c.JSON(http.StatusOK, gin.H{"token": token, "username": user.Username, "email": user.Email})
+}
+
+func isValidEmail(email string) bool {
+	regex := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
+	re := regexp.MustCompile(regex)
+	return re.MatchString(email)
 }
 
 // Logout godoc
