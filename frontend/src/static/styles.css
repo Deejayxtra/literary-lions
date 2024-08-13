@@ -349,3 +349,9 @@ label {
 .profile h2 {
     margin-bottom: 1rem;
 }
+
+.profile-container {
+    padding: 2rem;
+    width: 45rem;
+    height: 45rem;
+}
