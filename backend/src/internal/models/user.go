@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -127,4 +128,34 @@ func ProfileUpdate(userID int, email, username string) error {
 	}
 
 	return nil // Return nil if the profile update is successful
+}
+
+// func FindUserByEmail(tx *sql.Tx, email string) (*User, error) {
+// 	var user User
+// 	err := tx.QueryRow("SELECT id, email, password FROM users WHERE email = ?", email).Scan(&user.ID, &user.Email, &user.Password)
+// 	if err != nil {
+// 		if errors.Is(err, sql.ErrNoRows) {
+// 			return nil, errors.New("user not found")
+// 		}
+// 		return nil, err
+// 	}
+// 	return &user, nil
+// }
+
+func FindUserByEmail(tx *sql.Tx, email string) (*User, error) {
+	var user User
+	err := tx.QueryRow("SELECT id, email, password FROM users WHERE LOWER(email) = LOWER(?)", email).Scan(&user.ID, &user.Email, &user.Password)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.New("user not found")
+		}
+		// Log the error for debugging
+		fmt.Printf("Error querying user by email: %v\n", err)
+		return nil, err
+	}
+
+	// Log user details for debugging
+	fmt.Printf("User found: ID=%d, Email=%s\n", user.ID, user.Email)
+	return &user, nil
 }
