@@ -2,9 +2,6 @@ package models
 
 import (
 	"crypto/rand"
-	"fmt"
-
-	// "database/sql"
 	"encoding/base64"
 	"errors"
 	"time"
@@ -29,8 +26,6 @@ func ValidateSession(token string) (int, error) {
 
 // InvalidateSession removes or marks the session as invalid
 func InvalidateSession(token string) error {
-	fmt.Println("========token========")
-	fmt.Println(token)
 	_, err := db.Exec("DELETE FROM sessions WHERE token = ?", token)
 	return err
 }

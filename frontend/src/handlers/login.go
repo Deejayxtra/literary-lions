@@ -61,9 +61,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 				// Keep the token and username in store for later usage
 				sessionStore.Set(response.Token, response.Username, response.Email)
 
-				// // Get currentUser info for keep
-				// GetCurrentUser(w, cookie)
-
 				// Redirect to the index page after successful login
 				http.Redirect(w, r, "/", http.StatusSeeOther)
 				return
@@ -166,12 +163,6 @@ func SendLoginRequest(credentials models.Credentials, wg *sync.WaitGroup, respCh
 		}
 		return
 	}
-
-	// respChan <- models.AuthResponse{
-	// 	Success:  true,
-	// 	Token:    responseMessage["token"].(string),
-	// 	Username: responseMessage["username"].(string),
-	// }
 
 	token, tokenOK := responseMessage["token"].(string)
 	username, usernameOK := responseMessage["username"].(string)
