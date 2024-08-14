@@ -130,21 +130,9 @@ func ProfileUpdate(userID int, email, username string) error {
 	return nil // Return nil if the profile update is successful
 }
 
-// func FindUserByEmail(tx *sql.Tx, email string) (*User, error) {
-// 	var user User
-// 	err := tx.QueryRow("SELECT id, email, password FROM users WHERE email = ?", email).Scan(&user.ID, &user.Email, &user.Password)
-// 	if err != nil {
-// 		if errors.Is(err, sql.ErrNoRows) {
-// 			return nil, errors.New("user not found")
-// 		}
-// 		return nil, err
-// 	}
-// 	return &user, nil
-// }
-
 func FindUserByEmail(tx *sql.Tx, email string) (*User, error) {
 	var user User
-	err := tx.QueryRow("SELECT id, email, password FROM users WHERE LOWER(email) = LOWER(?)", email).Scan(&user.ID, &user.Email, &user.Password)
+	err := tx.QueryRow("SELECT id, email, username, password FROM users WHERE LOWER(email) = LOWER(?)", email).Scan(&user.ID, &user.Email, &user.Username, &user.Password)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -156,6 +144,8 @@ func FindUserByEmail(tx *sql.Tx, email string) (*User, error) {
 	}
 
 	// Log user details for debugging
-	fmt.Printf("User found: ID=%d, Email=%s\n", user.ID, user.Email)
+	// fmt.Printf("User found: ID=%d, Email=%s\n", user.ID, user.Email)
+	fmt.Printf("User found: ID=%d, Email=%s\n, Username=%s\n", user.ID, user.Email, user.Username)
+	// return &user, nil
 	return &user, nil
 }
