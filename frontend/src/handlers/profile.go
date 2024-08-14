@@ -47,12 +47,14 @@ func ShowUserProfile(w http.ResponseWriter, r *http.Request) {
 	// Handle GET requests to render the profile page
 	if r.Method == http.MethodGet {
 		data := struct {
+			Error	 bool
 			Username string
 			Email    string
 		}{
+			Error:    false,
 			Username: currentUser,
 			Email:    userData.Email,
-		}
+		}	
 
 		// Render the profile template with the user's data
 		RenderTemplate(w, "profile.html", data)
@@ -137,13 +139,13 @@ func UpdateUserProfile(w http.ResponseWriter, r *http.Request) {
 				// Pass error message to template
 				tmpl := template.Must(template.ParseFiles("templates/profile.html"))
 				data := struct {
-					Error   string
+					Error   template.HTML
 					Email   string
 					Username string
 				}{
-					Error:    response.Message,
-					Email:    email,
-					Username: username,
+					Error:    template.HTML(response.Message),
+					Username: currentUser,
+					Email:    userData.Email,
 				}
 				if err := tmpl.Execute(w, data); err != nil {
 					http.Error(w, "Error rendering template", http.StatusInternalServerError)

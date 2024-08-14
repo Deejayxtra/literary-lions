@@ -19,7 +19,7 @@ func AuthMiddleware(requiredRole string) gin.HandlerFunc {
 		cookie, err := c.Cookie("session_token")
 		if err != nil {
 			// If the session token is missing or invalid, return an unauthorized error
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header missing or invalid"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": `It seems the session has expired, try <a href="/login">login</a> again`})
 			c.Abort() // Abort the request, no further handlers will be called
 			return
 		}
@@ -29,7 +29,7 @@ func AuthMiddleware(requiredRole string) gin.HandlerFunc {
 		userID, err := models.ValidateSession(token)
 		if err != nil || userID == 0 {
 			// If the session is invalid or the user ID is 0, return an unauthorized error
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header missing or invalid"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": `It seems the session has expired, try <a href="/login">login</a> again`})
 			c.Abort() // Abort the request, no further handlers will be called
 			return
 		}
