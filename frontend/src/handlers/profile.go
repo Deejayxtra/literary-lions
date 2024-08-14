@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
-	"log"
-	"net/http"
-	"sync"
-	"time"
 	"literary-lions/frontend/src/config"
 	"literary-lions/frontend/src/models"
+	"log"
+	"net/http"
+	"time"
 )
 
 func ShowUserProfile(w http.ResponseWriter, r *http.Request) {
@@ -164,115 +163,6 @@ func UpdateUserProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 
-// DeleteUserProfile handles deleting a user's profile
-func DeleteUserProfile(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Extract the user ID from the form data
-	userID := r.FormValue("id")
-
-	// Create a new DELETE request to the API to delete the user profile
-	req, err := http.NewRequest("DELETE", config.BaseApi+"/user/"+userID, nil)
-	if err != nil {
-		http.Error(w, "Failed to create request", http.StatusInternalServerError)
-		return
-	}
-
-	// Use an http.Client to make the request
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		http.Error(w, "Failed to delete user profile", http.StatusInternalServerError)
-		return
-	}
-	defer resp.Body.Close()
-
-	// Check for errors in the API response
-	if resp.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
-		http.Error(w, string(body), resp.StatusCode)
-		return
-	}
-
-	// Redirect to the homepage or a confirmation page
-	http.Redirect(w, r, "/", http.StatusSeeOther)
-}
-
-func SendProfileRequest(user models.User, wg *sync.WaitGroup, respChan chan models.ResponseDetails) {
-	defer wg.Done()	// Ensure the channel is closed once this function completes
-
-	// Format data to JSON format  
-	jsonData, err := json.Marshal(user)
-	if err != nil {
-		respChan <- models.ResponseDetails{
-			Success: false,
-			Message: fmt.Sprintf("error marshaling credentials: %v", err),
-		}
-		return
-	}
-
-	// Define the POST request
-	url := config.BaseApi + "/register"
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
-	if err != nil {
-		respChan <- models.ResponseDetails{
-			Success: false,
-			Message: fmt.Sprintf("error creating request: %v", err),
-		}
-		return
-	}
-	// Request Header
-	req.Header.Set("Content-Type", "application/json")
-
-	// Send the POST request
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		respChan <- models.ResponseDetails{
-			Success: false,
-			Message: fmt.Sprintf("error sending request: %v", err),
-		}
-		return
-	}
-	defer resp.Body.Close()
-
-	// Read the response body
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		respChan <- models.ResponseDetails{
-			Success: false,
-			Message: fmt.Sprintf("error reading response: %v", err),
-		}
-		return
-	}
-
-	// Check response status code
-	if resp.StatusCode != http.StatusOK {
-		// Attempt to parse the error message from the response
-		var errorResponse map[string]interface{}
-		var errorMessage string
-		if err := json.Unmarshal(body, &errorResponse); err != nil {
-			errorMessage = string(body) // Use raw body as fallback
-		} else {
-			if errMsg, exists := errorResponse["error"]; exists {
-				errorMessage = fmt.Sprintf("%v", errMsg)
-			} else {
-				errorMessage = "unknown error"
-			}
-		}
-
-		respChan <- models.ResponseDetails{
-			Success: false,
-			Message: fmt.Sprintln(errorMessage),
-		}
-		return
-	}
-
-}
-
 func SendUpdateUserProfile(cookie *http.Cookie, user models.User, respChan chan models.ResponseDetails) {
 	defer close(respChan) // Ensure the channel is closed once this function completes
 	// Mashalls data to JSON format
@@ -300,7 +190,7 @@ func SendUpdateUserProfile(cookie *http.Cookie, user models.User, respChan chan 
 	// Set the session cookie in the request
 	req.AddCookie(cookie)
 
-	// Send the PUT request
+	// Send the PUT request to the API
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {

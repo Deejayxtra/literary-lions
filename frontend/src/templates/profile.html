@@ -26,11 +26,11 @@
             <h2>{{.Username}}</h2>
             <h3>{{.Email}}</h3>
 
-            <footer>
-                <p><h4><a href="/update-profile">Profile Update</a></h4></p>
-            </footer>
-
-            <!-- <form action="/delete-profile" method="POST"></form>  -->
+            <div class="update">
+                <form method="GET" action="/update-profile">
+                    <button type="submit">Update Profile</button>
+                </form>
+            </div>
 
         </div>
     </main>

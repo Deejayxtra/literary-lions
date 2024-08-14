@@ -1,10 +1,10 @@
 package handlers
 
 import (
+	"literary-lions/backend/src/internal/models"
 	"net/http"
 	"strconv"
 	"github.com/gin-gonic/gin"
-	"literary-lions/backend/src/internal/models"
 )
 
 // AddComment godoc
@@ -128,7 +128,6 @@ func GetAllPosts(c *gin.Context) {
         c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
         return
     }
-
     // Return the list of posts as a JSON response
     c.JSON(http.StatusOK, posts)
 }
