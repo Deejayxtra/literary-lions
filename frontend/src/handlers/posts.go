@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	"literary-lions/frontend/src/config"
+	"literary-lions/frontend/src/models"
+	"log"
 	"net/http"
 	"sync"
 	"unicode/utf8"
-	"literary-lions/frontend/src/config"
-	"literary-lions/frontend/src/models"
 )
 
 // Helper function to truncate post content to 150 characters
@@ -43,7 +44,18 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 	var posts []models.Post
 	err = json.Unmarshal(body, &posts)
 	if err != nil {
-		http.Error(w, "Failed to parse response", http.StatusInternalServerError)
+		// http.Error(w, "Failed to parse response", http.StatusInternalServerError)
+		// Pass error message to template
+		tmpl := template.Must(template.ParseFiles("templates/notification.html"))
+		data := struct {
+			Error   string
+		}{
+			Error:    "Oops! Something went wrong...",
+		}
+		if err := tmpl.Execute(w, data); err != nil {
+			http.Error(w, "Error rendering template", http.StatusInternalServerError)
+			log.Fatalf("Error rendering template: %v", err)
+		}
 		return
 	}
 
