@@ -164,7 +164,7 @@ func GetFilteredPosts(category, title string, startDate, endDate time.Time) ([]P
 	if len(filters) > 0 {
 		query += " WHERE " + strings.Join(filters, " AND ")
 	}
-	query += " ORDER BY created_at DESC"
+	query += " ORDER BY created_at DESC" // Order by most recent posts
 
 	// Execute the query
 	rows, err := db.Query(query, args...)
