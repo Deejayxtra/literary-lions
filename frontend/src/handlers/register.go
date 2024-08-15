@@ -67,10 +67,14 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 		// Handles error from rendering template
 		if err := tmpl.Execute(w, data); err != nil {
-			http.Error(w, "Error rendering template", http.StatusInternalServerError)
+			message := "Error rendering template"
+			StatusInternalServerError(w, message)
+			// http.Error(w, "Error rendering template", http.StatusInternalServerError)
 		}
 	} else {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		message := "Invalid request method"
+		StatusInternalServerError(w, message)
+		// http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 	}
 }
 

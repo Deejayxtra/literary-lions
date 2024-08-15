@@ -19,7 +19,9 @@ func ShowUserProfile(w http.ResponseWriter, r *http.Request) {
 
 	// Check if the user is authenticated
 	if !authenticated {
-		http.Error(w, "User not authenticated", http.StatusUnauthorized)
+		message := "User not authenticated"
+		StatusInternalServerError(w, message)
+		// http.Error(w, "User not authenticated", http.StatusUnauthorized)
 		return
 	}
 
@@ -61,14 +63,18 @@ func ShowUserProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If not a GET request, handle it accordingly
-	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	message := "Method not allowed"
+	StatusInternalServerError(w, message)
+	// http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 }
 
 func UpdateUserProfile(w http.ResponseWriter, r *http.Request) {
 	// Check if the user is authenticated
 	currentUser, authenticated := isAuthenticated(r)
 	if !authenticated {
-		http.Error(w, "User not authenticated", http.StatusUnauthorized)
+		message := "User not authenticated"
+		StatusInternalServerError(w, message)
+		// http.Error(w, "User not authenticated", http.StatusUnauthorized)
 		return
 	}
 
@@ -147,19 +153,25 @@ func UpdateUserProfile(w http.ResponseWriter, r *http.Request) {
 					Email:    userData.Email,
 				}
 				if err := tmpl.Execute(w, data); err != nil {
-					http.Error(w, "Error rendering template", http.StatusInternalServerError)
+					message := "Error rendering template"
+					StatusInternalServerError(w, message)
+					// http.Error(w, "Error rendering template", http.StatusInternalServerError)
 					log.Fatalf("Error rendering template: %v", err)
 				}
 			}
 		case <-time.After(10 * time.Second):
 			// Handle the case where the operation times out
-			http.Error(w, "Profile update timed out", http.StatusGatewayTimeout)
+			message := "Profile update timed out"
+			StatusInternalServerError(w, message)
+			// http.Error(w, "Profile update timed out", http.StatusGatewayTimeout)
 		}
 		return
 	}
 
 	// If the method is neither GET nor POST, return an error
-	http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+	message := "Invalid request method"
+	StatusInternalServerError(w, message)
+	// http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 }
 
 

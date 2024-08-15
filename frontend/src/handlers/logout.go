@@ -16,7 +16,9 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	// Extract the session cookie from the header
 	cookieToken, err := r.Cookie("session_token")
 	if err != nil {
-		http.Error(w, "Failed to get session cookie", http.StatusUnauthorized)
+		message := "Failed to get session cookie"
+		StatusInternalServerError(w, message)
+		// http.Error(w, "Failed to get session cookie", http.StatusUnauthorized)
 		return
 	}
 
