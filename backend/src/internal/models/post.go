@@ -3,16 +3,17 @@ package models
 import (
 	"database/sql"
 	"log"
+	"strings"
 	"time"
 )
 
 type Post struct {
-	ID        int
-	UserID    int
-	Title     string
-	Content   string
-	Username  string
-	Category  string
+	ID        int		`json:"id"`
+	UserID    int		`json:"user_id"`
+	Title     string	`json:"title"`
+	Content   string	`json:"content"`
+	Username  string	`json:"username"`
+	Category  string	`json:"category"`
 	CreatedAt time.Time `json:"created_at" db:"createdAt"`
 }
 
@@ -129,3 +130,65 @@ func GetPostByID(postID int) (Post, error) {
 
 // 	return userID, nil
 // }
+
+// GetFilteredPosts retrieves posts from the database based on the provided filters.
+func GetFilteredPosts(category, title string, startDate, endDate time.Time) ([]Post, error) {
+	var posts []Post
+	var filters []string
+	var args []interface{}
+
+	// Apply title filter
+	if title != "" {
+		filters = append(filters, "title LIKE ?")
+		args = append(args, "%"+title+"%")
+	}
+
+	// Apply category filter
+	if category != "" {
+		filters = append(filters, "category LIKE ?")
+		args = append(args, "%"+category+"%")
+	}
+
+	// Apply date range filter
+	if !startDate.IsZero() {
+		filters = append(filters, "created_at >= ?")
+		args = append(args, startDate)
+	}
+	if !endDate.IsZero() {
+		filters = append(filters, "created_at <= ?")
+		args = append(args, endDate)
+	}
+
+	// Build the query
+	query := "SELECT id, user_id, title, content, category, created_at FROM posts"
+	if len(filters) > 0 {
+		query += " WHERE " + strings.Join(filters, " AND ")
+		query += " ORDER BY created_at DESC"
+	}
+
+	// Execute the query
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Iterate over the rows and scan the data into the posts slice
+	for rows.Next() {
+		var post Post
+		if err := rows.Scan(&post.ID, &post.UserID, &post.Title, &post.Content, &post.Category, &post.CreatedAt); err != nil {
+			return nil, err
+		}
+
+		// Fetch the username for each post based on the user ID
+        user, err := GetUser(post.UserID)
+        if err != nil {
+            return nil, err
+        }
+        post.Username = user.Username
+
+		posts = append(posts, post)
+	}
+
+	return posts, nil
+}

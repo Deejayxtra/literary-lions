@@ -2,8 +2,11 @@ package handlers
 
 import (
 	"literary-lions/backend/src/internal/models"
+	"log"
 	"net/http"
 	"strconv"
+	"time"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -120,16 +123,44 @@ func CreatePost(c *gin.Context) {
 // @Router /api/posts [get]
 // @Security ApiKeyAuth
 // GetAllPosts handles the retrieval of all posts using Gin
+// GetAllPosts handles the retrieval of all posts with optional advanced search filters.
 func GetAllPosts(c *gin.Context) {
-    // Call the function to get all posts from the database
-    posts, err := models.GetAllPosts(db)
-    if err != nil {
-        // If the operation fails, return an internal server error
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-    // Return the list of posts as a JSON response
-    c.JSON(http.StatusOK, posts)
+	// Retrieve query parameters for filtering
+	title := c.Query("keyword")
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+
+	category := c.Query("category")
+
+	// Parse the start and end dates if provided
+	var parsedStartDate, parsedEndDate time.Time
+	var err error
+	if startDate != "" {
+		parsedStartDate, err = time.Parse("2006-01-02", startDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start date format. Use YYYY-MM-DD."})
+			return
+		}
+	}
+	if endDate != "" {
+		parsedEndDate, err = time.Parse("2006-01-02", endDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end date format. Use YYYY-MM-DD."})
+			return
+		}
+	}
+
+	// Call the function to get all posts from the database with the provided filters
+	posts, err := models.GetFilteredPosts(category, title, parsedStartDate, parsedEndDate)
+	if err != nil {
+        log.Print("Err: ", err.Error())
+		// If the operation fails, return an internal server error
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Return the list of posts as a JSON response
+	c.JSON(http.StatusOK, posts)
 }
 
 // GetPost godoc

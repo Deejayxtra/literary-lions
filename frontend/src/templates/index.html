@@ -33,17 +33,23 @@
         <div class="heading">
             <h2>Posts</h2>
             <div>
-                <form method="GET" action="/posts/category">
-                    <label for="category">Filter by category:</label>
-                    <select name="category" id="category">
+                <form action="/" method="GET">
+                    <input type="text" name="query" placeholder="Search posts...">
+                    <select name="category">
                         <option value="">All Categories</option>
-                        <!-- Populate categories dynamically -->
-                        {{range .Categories}}
-                        <option value="{{.}}">{{.}}</option>
-                        {{end}}
+                        <option value="Random">Random</option>
+                        <option value="News">News</option>
+                        <option value="Sport">Sport</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Science">Science</option>
+                        <option value="Health">Health</option>
+                        <!-- Add other categories -->
                     </select>
-                    <button type="submit">Filter</button>
+                    <input type="date" name="start_date">
+                    <input type="date" name="end_date">
+                    <button type="submit">Search</button>
                 </form>
+
             </div>
         </div>
     </div>

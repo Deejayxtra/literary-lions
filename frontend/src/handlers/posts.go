@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"literary-lions/frontend/src/config"
 	"literary-lions/frontend/src/models"
+	"log"
 	"net/http"
 	"sync"
 	"unicode/utf8"
@@ -24,8 +25,31 @@ func truncateContent(content string, limit int) string {
 
 // Display posts.
 func ShowPosts(w http.ResponseWriter, r *http.Request) {
+	// Get the search query parameters
+	keyword := r.URL.Query().Get("query")
+	category := r.URL.Query().Get("category")
+	startDate := r.URL.Query().Get("start_date")
+	endDate := r.URL.Query().Get("end_date")
+
+	// Construct the API request URL with query parameters
+	apiURL := config.BaseApi + "/posts?"
+	if keyword != "" {
+		apiURL += "keyword=" + keyword + "&"
+	}
+	if category != "" {
+		apiURL += "category=" + category + "&"
+	}
+	if startDate != "" {
+		apiURL += "start_date=" + startDate + "&"
+	}
+	if endDate != "" {
+		apiURL += "end_date=" + endDate + "&"
+	}
+
+	log.Print("API: ", apiURL)
+
 	// Make an HTTP GET request to the /api/posts endpoint
-	resp, err := http.Get(config.BaseApi + "/posts")
+	resp, err := http.Get(apiURL)
 	if err != nil {
 		message := "Failed to fetch posts"
 		StatusInternalServerError(w, message)
@@ -37,9 +61,7 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 	// Read the response body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		message := "Failed to read response"
-		StatusInternalServerError(w, message)
-		// http.Error(w, "Failed to read response", http.StatusInternalServerError)
+		http.Error(w, "Failed to read response", http.StatusInternalServerError)
 		return
 	}
 
@@ -47,10 +69,20 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 	var posts []models.Post
 	err = json.Unmarshal(body, &posts)
 	if err != nil {
-		message := "Failed to parse response"
+		message := "Error rendering template"
 		StatusInternalServerError(w, message)
-		// http.Error(w, "Failed to parse response", http.StatusInternalServerError)
-		// Pass error message to template
+		// http.Error(w, "Error rendering template", http.StatusInternalServerError)
+	    log.Fatalf("Error rendering template: %v", err)
+		return
+	}
+
+
+	// Handle the case where no posts match the search criteria
+	if len(posts) == 0 {
+		message := "Error rendering template"
+		StatusInternalServerError(w, message)
+		// http.Error(w, "Error rendering template", http.StatusInternalServerError)
+		log.Fatalf("Error rendering template: %v", err)
 		return
 	}
 
@@ -79,8 +111,8 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 
 	// Render the template with posts and authentication status
 	RenderTemplate(w, "index.html", data)
-
 }
+
 
 // Display posts by category.
 func ShowPostsByCategory(w http.ResponseWriter, r *http.Request) {
