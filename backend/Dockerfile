@@ -30,7 +30,7 @@ RUN mkdir -p /app/src
 COPY --from=builder /main /main
 
 # Copy the database file to the correct location
-COPY --from=builder /app/src/literary_lions.db /app/src/literary_lions.db
+COPY --from=builder /app/src/cmd/literary_lions.db /app/src/literary_lions.db
 
 # Expose the port that your application will run on
 EXPOSE 8080
