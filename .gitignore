@@ -8,7 +8,7 @@
 *.dll
 *.so
 *.dylib
-sessions.json
+
 
 # Test binary, built with `go test -c`
 *.test
@@ -24,3 +24,4 @@ go.work
 
 #db file
 backend/src/cmd/literary_lions.db
+frontend/src/sessions.json
