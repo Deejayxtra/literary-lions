@@ -41,9 +41,9 @@ Build the Docker Images
 You'll need to open your terminal and navigate to the directory where each Dockerfile is located to build the Docker images.
 
 1. Navigate to Backend Directory and Build Backend Image
-Open your terminal and navigate to the backend/src directory:
+Open your terminal and navigate to the backend directory:
 
-cd ~/literary-lions/backend/src
+cd ~/literary-lions/backend/
 
 Now, build the Docker image for the backend:
 
@@ -53,9 +53,9 @@ docker build -t literary-lions-backend .
 .: This represents the current directory, which contains the Dockerfile.
 
 2. Navigate to Frontend Directory and Build Frontend Image
-Next, navigate to the frontend/src directory:
+Next, navigate to the frontend directory:
 
-cd ~/literary-lions/frontend/src
+cd ~/literary-lions/frontend
 
 Build the Docker image for the frontend:
 
