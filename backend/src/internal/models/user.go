@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -35,16 +36,40 @@ func SetDatabase(databaseInstance *sql.DB) {
 //
 // Returns:
 //   - error: An error if the user registration fails; otherwise, nil.
+
+// func RegisterUser(email, username, password string) error {
+// 	// Hash the password using bcrypt
+// 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+// 	if err != nil {
+// 		return err // Return the error if password hashing fails
+// 	}
+
+// 	// Insert the new user record into the database
+// 	_, err = db.Exec("INSERT INTO users (email, username, password, role) VALUES (?, ?, ?, 'user')", email, username, string(hashedPassword))
+// 	return err // Return any error encountered during insertion
+// }
+
 func RegisterUser(email, username, password string) error {
 	// Hash the password using bcrypt
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return err // Return the error if password hashing fails
+		return err
 	}
 
 	// Insert the new user record into the database
 	_, err = db.Exec("INSERT INTO users (email, username, password, role) VALUES (?, ?, ?, 'user')", email, username, string(hashedPassword))
-	return err // Return any error encountered during insertion
+
+	// Check for uniqueness constraint errors
+	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed: users.username") {
+			return errors.New("username already exists, please use another username")
+		} else if strings.Contains(err.Error(), "UNIQUE constraint failed: users.email") {
+			return errors.New("email already exists, please use another email")
+		}
+		return err // Return the error if it's not a uniqueness constraint error
+	}
+
+	return nil
 }
 
 // AuthenticateUser checks if the provided email and password match a user record in the database.

@@ -78,7 +78,6 @@ func main() {
 		// api.DELETE("/comment/:id/undislike", handlers.UndislikeComment) // Remove dislike from a specific comment by ID
 	}
 
-	// Start server on port 8888
-	// r.Run(":8888")
+	// Start server on port 8080
 	r.Run(":8080")
 }
