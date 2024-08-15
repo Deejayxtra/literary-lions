@@ -138,18 +138,24 @@ func GetUser(userID int) (*User, error) {
 //
 // Returns:
 //   - error: An error if the profile update fails; otherwise, nil.
+
 func ProfileUpdate(userID int, email, username string) error {
 	// Prepare the SQL statement for updating the user profile
 	stmt, err := db.Prepare("UPDATE users SET email = ?, username = ? WHERE id = ?")
 	if err != nil {
-		return fmt.Errorf("failed to prepare SQL statement: %w", err) // Return a formatted error if statement preparation fails
+		return fmt.Errorf("failed to prepare SQL statement: %w", err)
 	}
-	defer stmt.Close() // Ensure the statement is closed after execution
+	defer stmt.Close()
 
 	// Execute the SQL statement to update the user profile
 	_, err = stmt.Exec(email, username, userID)
 	if err != nil {
-		return fmt.Errorf("failed to execute SQL statement: %w", err) // Return a formatted error if execution fails
+		if strings.Contains(err.Error(), "UNIQUE constraint failed: users.username") {
+			return errors.New("username already exists, please use another username")
+		} else if strings.Contains(err.Error(), "UNIQUE constraint failed: users.email") {
+			return errors.New("email already exists, please use another email")
+		}
+		return fmt.Errorf("failed to execute SQL statement: %w", err)
 	}
 
 	return nil // Return nil if the profile update is successful
