@@ -25,3 +25,4 @@ go.work
 #db file
 backend/src/cmd/literary_lions.db
 frontend/src/sessions.json
+literary_lions.db
