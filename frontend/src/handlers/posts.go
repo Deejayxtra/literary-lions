@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"literary-lions/frontend/src/config"
 	"literary-lions/frontend/src/models"
-	"log"
 	"net/http"
 	"sync"
 	"unicode/utf8"
@@ -28,7 +27,9 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 	// Make an HTTP GET request to the /api/posts endpoint
 	resp, err := http.Get(config.BaseApi + "/posts")
 	if err != nil {
-		http.Error(w, "Failed to fetch posts", http.StatusInternalServerError)
+		message := "Failed to fetch posts"
+		StatusInternalServerError(w, message)
+		// http.Error(w, "Failed to fetch posts", http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
@@ -36,7 +37,9 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 	// Read the response body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		http.Error(w, "Failed to read response", http.StatusInternalServerError)
+		message := "Failed to read response"
+		StatusInternalServerError(w, message)
+		// http.Error(w, "Failed to read response", http.StatusInternalServerError)
 		return
 	}
 
@@ -44,18 +47,10 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 	var posts []models.Post
 	err = json.Unmarshal(body, &posts)
 	if err != nil {
+		message := "Failed to parse response"
+		StatusInternalServerError(w, message)
 		// http.Error(w, "Failed to parse response", http.StatusInternalServerError)
 		// Pass error message to template
-		tmpl := template.Must(template.ParseFiles("templates/notification.html"))
-		data := struct {
-			Error   string
-		}{
-			Error:    "Oops! Something went wrong...",
-		}
-		if err := tmpl.Execute(w, data); err != nil {
-			http.Error(w, "Error rendering template", http.StatusInternalServerError)
-			log.Fatalf("Error rendering template: %v", err)
-		}
 		return
 	}
 
@@ -105,7 +100,9 @@ func ShowPostsByCategory(w http.ResponseWriter, r *http.Request) {
 	// Make an HTTP GET request to the /api/posts endpoint
 	resp, err := http.Get(url)
 	if err != nil {
-		http.Error(w, "Failed to fetch posts", http.StatusInternalServerError)
+		message := "Failed to fetch posts"
+		StatusInternalServerError(w, message)
+		// http.Error(w, "Failed to fetch posts", http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
@@ -139,7 +136,9 @@ func ShowPostsByCategory(w http.ResponseWriter, r *http.Request) {
 	// Read the response body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		http.Error(w, "Failed to read response", http.StatusInternalServerError)
+		message := "Failed to read response"
+		StatusInternalServerError(w, message)
+		// http.Error(w, "Failed to read response", http.StatusInternalServerError)
 		return
 	}
 
@@ -147,7 +146,9 @@ func ShowPostsByCategory(w http.ResponseWriter, r *http.Request) {
 	var posts []models.Post
 	err = json.Unmarshal(body, &posts)
 	if err != nil {
-		http.Error(w, "Failed to parse response", http.StatusInternalServerError)
+		message := "Failed to parse response"
+		StatusInternalServerError(w, message)
+		// http.Error(w, "Failed to parse response", http.StatusInternalServerError)
 		return
 	}
 
@@ -179,7 +180,9 @@ func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 	// Create a new GET request
 	req, err := http.NewRequest("GET", config.BaseApi+"/post/"+id, nil)
 	if err != nil {
-		http.Error(w, "Failed to create request", http.StatusInternalServerError)
+		message := "Failed to create request"
+		StatusInternalServerError(w, message)
+		// http.Error(w, "Failed to create request", http.StatusInternalServerError)
 		return
 	}
 
@@ -187,7 +190,9 @@ func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		http.Error(w, "Failed to fetch post", http.StatusInternalServerError)
+		message := "Failed to fetch post"
+		StatusInternalServerError(w, message)
+		// http.Error(w, "Failed to fetch post", http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
@@ -195,7 +200,9 @@ func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 	// Read the response body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		http.Error(w, "Failed to read response", http.StatusInternalServerError)
+		message := "Failed to read response"
+		StatusInternalServerError(w, message)
+		// http.Error(w, "Failed to read response", http.StatusInternalServerError)
 		return
 	}
 
@@ -203,7 +210,9 @@ func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 	var response models.PostDetails
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		http.Error(w, "Failed to parse response", http.StatusInternalServerError)
+		message := "Failed to parse response"
+		StatusInternalServerError(w, message)
+		// http.Error(w, "Failed to parse response", http.StatusInternalServerError)
 		return
 	}
 
