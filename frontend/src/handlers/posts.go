@@ -23,7 +23,6 @@ func truncateContent(content string, limit int) string {
 	return content
 }
 
-// Display posts.
 func ShowPosts(w http.ResponseWriter, r *http.Request) {
 	// Get the search query parameters
 	keyword := r.URL.Query().Get("query")
@@ -46,14 +45,11 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 		apiURL += "end_date=" + endDate + "&"
 	}
 
-	log.Print("API: ", apiURL)
-
 	// Make an HTTP GET request to the /api/posts endpoint
 	resp, err := http.Get(apiURL)
 	if err != nil {
 		message := "Failed to fetch posts"
 		StatusInternalServerError(w, message)
-		// http.Error(w, "Failed to fetch posts", http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
@@ -71,18 +67,32 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		message := "Error rendering template"
 		StatusInternalServerError(w, message)
-		// http.Error(w, "Error rendering template", http.StatusInternalServerError)
-	    log.Fatalf("Error rendering template: %v", err)
+		log.Fatalf("Error rendering template: %v", err)
 		return
 	}
 
-
 	// Handle the case where no posts match the search criteria
 	if len(posts) == 0 {
-		message := "Error rendering template"
-		StatusInternalServerError(w, message)
-		// http.Error(w, "Error rendering template", http.StatusInternalServerError)
-		log.Fatalf("Error rendering template: %v", err)
+		// Get the authentication status and the currentUser if any
+		currentUser, authenticated := isAuthenticated(r)
+		// No posts found, so display a friendly message
+		data := struct {
+			Posts         []models.Post
+			Authenticated bool
+			Categories    []string
+			Username      string
+			NoPostsFound  bool
+			SearchMessage string
+		}{
+			Posts:         posts,
+			Authenticated: authenticated,
+			Categories:    []string{"Random", "News", "Sport", "Technology", "Science", "Health"},
+			Username:      currentUser,
+			NoPostsFound:  true,
+			SearchMessage: "No posts found for the selected criteria.",
+		}
+
+		RenderTemplate(w, "index.html", data)
 		return
 	}
 
@@ -102,17 +112,18 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 		Authenticated bool
 		Categories    []string
 		Username      string
+		NoPostsFound  bool
 	}{
 		Posts:         posts,
 		Authenticated: authenticated,
 		Categories:    categories,
 		Username:      currentUser,
+		NoPostsFound:  false,
 	}
 
 	// Render the template with posts and authentication status
 	RenderTemplate(w, "index.html", data)
 }
-
 
 // Display posts by category.
 func ShowPostsByCategory(w http.ResponseWriter, r *http.Request) {
