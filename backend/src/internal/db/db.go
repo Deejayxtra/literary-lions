@@ -52,7 +52,7 @@ func createTables(db *sql.DB) {
 		`CREATE TABLE IF NOT EXISTS sessions (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			user_id INTEGER NOT NULL,
-			token TEXT NOT NULL,
+			UUID VARCHAR(36) NOT NULL UNIQUE,
 			expires_at DATETIME NOT NULL,
 			FOREIGN KEY (user_id) REFERENCES users(id)
 		)`,

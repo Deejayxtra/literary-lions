@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -175,9 +174,6 @@ func FindUserByEmail(tx *sql.Tx, email string) (*User, error) {
 	}
 
 	// Log user details for debugging
-	// fmt.Printf("User found: ID=%d, Email=%s\n", user.ID, user.Email)
-	fmt.Printf("User found: ID=%d, Email=%s\n, Username=%s\n", user.ID, user.Email, user.Username)
-	// return &user, nil
 	return &user, nil
 }
 

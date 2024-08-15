@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,       -- Unique identifier for each session, auto-incremented.
     user_id INTEGER NOT NULL,                   -- Foreign key referencing the 'users' table, links session to a user.
-    token TEXT NOT NULL,                        -- Session token used for authentication.
-    expires_at DATETIME NOT NULL,               -- Expiration time of the session token.
+    UUID VARCHAR(36) NOT NULL UNIQUE,           -- Session UUID used for authentication.
+    expires_at DATETIME NOT NULL,               -- Expiration time of the session UUID.
     FOREIGN KEY (user_id) REFERENCES users(id)  -- Ensure user_id corresponds to a valid user in the 'users' table.
 );
 
