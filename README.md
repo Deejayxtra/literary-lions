@@ -31,4 +31,21 @@ row: &{<nil> 0xc00012a240}
 [GIN] 2024/08/01 - 07:04:13 | 200 |   81.618298ms |       127.0.0.1 | POST     "/login"
 [GIN] 2024/08/01 - 07:04:15 | 500 |     166.878µs |       127.0.0.1 | GET      "/api/posts"
 
-Why is the user being redirected to the 
+
+
+Building the Docker Images
+Backend
+```docker build -t literary-lions-backend -f backend/src/Dockerfile```
+
+Frontend
+```docker build -t literary-lions-frontend -f frontend/src/Dockerfile```.
+
+
+Running the Docker Containers
+Backend:
+sh
+docker run -p 8080:8080 literary-lions-backend
+Frontend:
+sh
+docker run -p 8000:8000 literary-lions-frontend
+

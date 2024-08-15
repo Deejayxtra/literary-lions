@@ -180,3 +180,4 @@ func FindUserByEmail(tx *sql.Tx, email string) (*User, error) {
 	// return &user, nil
 	return &user, nil
 }
+

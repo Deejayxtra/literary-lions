@@ -3,14 +3,15 @@ package main
 import (
 	"log"
 
-	"github.com/gin-gonic/gin"
-	_ "github.com/mattn/go-sqlite3"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 	_ "literary-lions/backend/docs"
 	"literary-lions/backend/src/internal/db"
 	"literary-lions/backend/src/internal/handlers"
 	"literary-lions/backend/src/internal/middleware"
+
+	"github.com/gin-gonic/gin"
+	_ "github.com/mattn/go-sqlite3"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // @title Gin API
@@ -58,22 +59,22 @@ func main() {
 	api.Use(handlers.AuthMiddleware("user")) // Apply middleware to the group
 
 	{
-		api.GET("/users", handlers.GetAllUsers)            // Apply middleware based on role in the function
-		api.POST("/post", handlers.CreatePost)             // Create a new post
-		api.PUT("/post/:id", handlers.UpdatePost)          // Update a specific post by ID
-		api.DELETE("/post/:id", handlers.DeletePost)       // Delete a specific post by ID
-		api.POST("/post/:id/comment", handlers.AddComment) // Add a comment to a specific post by ID
-		api.PUT("/userprofile-update", handlers.UpdateUserProfile)	// Update user profile
+		api.GET("/users", handlers.GetAllUsers)                    // Apply middleware based on role in the function
+		api.POST("/post", handlers.CreatePost)                     // Create a new post
+		api.PUT("/post/:id", handlers.UpdatePost)                  // Update a specific post by ID
+		api.DELETE("/post/:id", handlers.DeletePost)               // Delete a specific post by ID
+		api.POST("/post/:id/comment", handlers.AddComment)         // Add a comment to a specific post by ID
+		api.PUT("/userprofile-update", handlers.UpdateUserProfile) // Update user profile
 
 		// Likes and dislikes for posts
-		api.POST("/post/:id/like", handlers.LikePost)             // Like a specific post by ID
-		api.POST("/post/:id/dislike", handlers.DislikePost)       // Dislike a specific post by ID
+		api.POST("/post/:id/like", handlers.LikePost)       // Like a specific post by ID
+		api.POST("/post/:id/dislike", handlers.DislikePost) // Dislike a specific post by ID
 		// api.DELETE("/post/:id/unlike", handlers.UnlikePost)       // Unlike a specific post by ID
 		// api.DELETE("/post/:id/undislike", handlers.UndislikePost) // Remove dislike from a specific post by ID
 
 		// // Likes and dislikes for comments
-		api.POST("/comment/:id/like", handlers.LikeComment)             // Like a specific comment by ID
-		api.POST("/comment/:id/dislike", handlers.DislikeComment)       // Dislike a specific comment by ID
+		api.POST("/comment/:id/like", handlers.LikeComment)       // Like a specific comment by ID
+		api.POST("/comment/:id/dislike", handlers.DislikeComment) // Dislike a specific comment by ID
 		// api.DELETE("/comment/:id/unlike", handlers.UnlikeComment)       // Unlike a specific comment by ID
 		// api.DELETE("/comment/:id/undislike", handlers.UndislikeComment) // Remove dislike from a specific comment by ID
 	}
