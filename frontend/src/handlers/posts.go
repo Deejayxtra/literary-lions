@@ -57,7 +57,9 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 	// Read the response body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		http.Error(w, "Failed to read response", http.StatusInternalServerError)
+		message := "Failed to fetch posts"
+		StatusInternalServerError(w, message)
+		// http.Error(w, "Failed to read response", http.StatusInternalServerError)
 		return
 	}
 
