@@ -25,9 +25,6 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		password := r.FormValue("password")
 		username := r.FormValue("username")
 
-		// Print credentials for debugging
-		fmt.Printf("Credentials: email=%s, password=%s\n, username=%s\n", email, password, username)
-
 		respChan := make(chan models.ResponseDetails, 1)
 		var wg sync.WaitGroup
 
