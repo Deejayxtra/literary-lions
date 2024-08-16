@@ -187,9 +187,14 @@ footer {
     height: 100vh;
 }
 
+.login-box h3,
+.register-box h3 {
+    text-align: center;
+}
+
 .login-box,
 .register-box {
-    background-color: #fff;
+    background-color: rgba(247, 244, 244, 0);
     padding: 30px;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
