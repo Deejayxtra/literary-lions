@@ -459,3 +459,57 @@ func SendCreatePostRequest(cookie *http.Cookie, payload models.Post, waitGroup *
 		Status:  resp.StatusCode,
 	}
 }
+
+
+func SendGetPostByIdRequest(id string, w http.ResponseWriter, r *http.Request, waitGroup *sync.WaitGroup, respChan chan models.PostDetails) {
+    defer waitGroup.Done()
+
+    // Create a new GET request	
+    req, err := http.NewRequest("GET", config.BaseApi+"/post/"+id, nil)
+    if err != nil {
+		message := "Failed to create request"
+		StatusInternalServerError(w, message)
+        // http.Error(w, "Failed to create request", http.StatusInternalServerError)
+        return
+    }
+
+    // Use an http.Client to make the request
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+		message := "Failed to fetch post"
+		StatusInternalServerError(w, message)
+        // http.Error(w, "Failed to fetch post", http.StatusInternalServerError)
+        return
+    }
+    defer resp.Body.Close()
+
+    // Read the response body
+    body, err := ioutil.ReadAll(resp.Body)
+    if err != nil {
+		message := "Failed to read response"
+		StatusInternalServerError(w, message)
+        // http.Error(w, "Failed to read response", http.StatusInternalServerError)
+        return
+    }
+
+    // Parse the JSON response into a PostDetails model
+    var response models.PostDetails
+    err = json.Unmarshal(body, &response)
+    if err != nil {
+		log.Print("Response: ", response)
+		message := "Failed to parse response"
+		StatusInternalServerError(w, message)
+        // http.Error(w, "Failed to parse response", http.StatusInternalServerError)
+        return
+    }
+
+    respChan <- models.PostDetails{
+        Post:                        response.Post,
+        Comments:                    response.Comments,
+        Likes:                       response.Likes,
+        Dislikes:                    response.Dislikes,
+		Status:                      resp.StatusCode,
+
+    }
+}

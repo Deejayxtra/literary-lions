@@ -63,6 +63,8 @@ type PostDetails struct {
 	Comments []Comment
 	Likes 	  int
 	Dislikes  int
+	Status	  int
+	Content   string  
 }
 
 // Comment struct represents a comment on a post.

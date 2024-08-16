@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
-	"net/http"
-	"sync"
 	"literary-lions/frontend/src/config"
 	"literary-lions/frontend/src/models"
+	"net/http"
+	"sync"
 )
 
 // Method to add comment to posts
@@ -34,10 +34,7 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			// User must be logged-in to continue
 			message := `You are not authorized! Please <a href="/login">login</a> before adding comment.`
-			tmpl := template.Must(template.ParseFiles("templates/post.html"))
-			tmpl.Execute(w, map[string]interface{}{
-				"Error": template.HTML(message),
-			})
+			UnauthorizedErrorNotification(w, r, postID, message)
 			return
 		}
 
@@ -51,7 +48,7 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 			wg.Wait()
 			close(respChan)
 		}()
-
+		
 		responseDetails := <-respChan
 
 		// Checks the http status created if OK

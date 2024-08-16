@@ -13,6 +13,8 @@ import (
 
 // Method to like posts
 func LikePost(w http.ResponseWriter, r *http.Request) {
+    // Extract the post query parameter from the URL
+    postID := r.URL.Query().Get("postID")
     if r.Method == http.MethodPost {
         r.ParseForm()
         postIDStr := r.URL.Query().Get("postID")
@@ -26,11 +28,8 @@ func LikePost(w http.ResponseWriter, r *http.Request) {
 		cookieToken, err := r.Cookie("session_token")
 		if err != nil {
 			// User must be logged-in to continue
-			message := `You are not authorized! Please <a href="/login">login</a> before liking a post.`
-			tmpl := template.Must(template.ParseFiles("templates/post.html"))
-			tmpl.Execute(w, map[string]interface{}{
-				"Error": template.HTML(message),
-			})
+			message := `You are not authorized! Please <a href="/login">login</a> before adding comment.`
+			UnauthorizedErrorNotification(w, r, postID, message)
 			return
 		}
 
@@ -56,6 +55,8 @@ func LikePost(w http.ResponseWriter, r *http.Request) {
 
 // Method to dislike posts
 func DislikePost(w http.ResponseWriter, r *http.Request) {
+    // Extract the post query parameter from the URL
+    postID := r.URL.Query().Get("postID")
        if r.Method == http.MethodPost {
         r.ParseForm()
         postIDStr := r.URL.Query().Get("postID")
@@ -69,11 +70,8 @@ func DislikePost(w http.ResponseWriter, r *http.Request) {
 		cookieToken, err := r.Cookie("session_token")
 		if err != nil {
 			// User must be logged-in to continue
-			message := `You are not authorized! Please <a href="/login">login</a> before liking a post.`
-			tmpl := template.Must(template.ParseFiles("templates/post.html"))
-			tmpl.Execute(w, map[string]interface{}{
-				"Error": template.HTML(message),
-			})
+			message := `You are not authorized! Please <a href="/login">login</a> before adding comment.`
+			UnauthorizedErrorNotification(w, r, postID, message)
 			return
 		}
 
@@ -252,6 +250,8 @@ func SendDislikeRequest(id string, cookie *http.Cookie, waitGroup *sync.WaitGrou
 
 // Method to like comments
 func LikeComment(w http.ResponseWriter, r *http.Request) {
+    // Extract the post query parameter from the URL
+    postID := r.URL.Query().Get("postID")
     // Method for POST request to like comments
     if r.Method == http.MethodPost {
         r.ParseForm()
@@ -267,11 +267,8 @@ func LikeComment(w http.ResponseWriter, r *http.Request) {
 		cookieToken, err := r.Cookie("session_token")
 		if err != nil {
 			// User must be logged-in to continue
-			message := `You are not authorized! Please <a href="/login">login</a> before liking a post.`
-			tmpl := template.Must(template.ParseFiles("templates/post.html"))
-			tmpl.Execute(w, map[string]interface{}{
-				"Error": template.HTML(message),
-			})
+			message := `You are not authorized! Please <a href="/login">login</a> before adding comment.`
+			UnauthorizedErrorNotification(w, r, postID, message)
 			return
 		}
 
@@ -297,6 +294,8 @@ func LikeComment(w http.ResponseWriter, r *http.Request) {
 
 // Method to dislike comments
 func DislikeComment(w http.ResponseWriter, r *http.Request) {  
+    // Extract the post query parameter from the URL
+    postID := r.URL.Query().Get("postID")
     // Method for POST request to dislike comments
     if r.Method == http.MethodPost {
         r.ParseForm()
@@ -312,11 +311,8 @@ func DislikeComment(w http.ResponseWriter, r *http.Request) {
 		cookieToken, err := r.Cookie("session_token")
 		if err != nil {
 			// User must be logged-in to continue
-			message := `You are not authorized! Please <a href="/login">login</a> before liking a post.`
-			tmpl := template.Must(template.ParseFiles("templates/post.html"))
-			tmpl.Execute(w, map[string]interface{}{
-				"Error": template.HTML(message),
-			})
+			message := `You are not authorized! Please <a href="/login">login</a> before adding comment.`
+			UnauthorizedErrorNotification(w, r, postID, message)
 			return
 		}
 
