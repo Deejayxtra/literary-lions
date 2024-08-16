@@ -40,7 +40,9 @@
         {{end}}
         <article>
             <h2>{{.Post.Title}}</h2>
-            <p>{{.Post.Content}}</p>
+            {{range .Post.FormattedContent}}
+            <p>{{.}}</p>
+            {{end}}
             <p><strong>Category:</strong> {{.Post.Category}}</p>
             <p><strong>Created by:</strong> {{.Post.Username}}</p>
             <p><strong>Posted on:</strong> {{.FormattedDate}}</p>

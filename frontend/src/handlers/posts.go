@@ -10,6 +10,7 @@ import (
 	"literary-lions/frontend/src/models"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"unicode/utf8"
 )
@@ -266,6 +267,7 @@ func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 
 	// Get the authentication status and the currentUser if any
 	currentUser, authenticated := isAuthenticated(r)
+	response.Post.FormattedContent = strings.Split(response.Post.Content, "\n")
 
 	data := struct {
 		Post          models.Post
@@ -292,85 +294,83 @@ func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 
 
 func CreatePost(w http.ResponseWriter, r *http.Request) {
-	// Get the authentication status and the currentUser if any
-	currentUser, authenticated := isAuthenticated(r)
+    // Get the authentication status and the currentUser if any
+    currentUser, authenticated := isAuthenticated(r)
 
-	// Renders page to user to select from category
-	if r.Method == http.MethodGet {
-		// Hardcoded categories for now. Might be nice to add feature for creating it and make it dynamic later
-		categories := []string{"Random", "News", "Sport", "Technology", "Science", "Health"}
-		data := struct {
-			Categories    []string
-			Error         bool
-			Authenticated bool
-			Username      string
-		}{
-			Categories:    categories,
-			Error:         false,
-			Authenticated: authenticated,
-			Username:      currentUser,
-		}
-		tmpl := template.Must(template.ParseFiles("templates/create-post.html"))
-		tmpl.Execute(w, data)
-	} else if r.Method == http.MethodPost {
-		r.ParseForm()
-		category := r.FormValue("category")
-		title := r.FormValue("title")
-		content := r.FormValue("content")
+    // Render the page to the user to select from category
+    if r.Method == http.MethodGet {
+        // Hardcoded categories for now. Might be nice to add feature for creating it and make it dynamic later
+        categories := []string{"Random", "News", "Sport", "Technology", "Science", "Health"}
+        data := struct {
+            Categories    []string
+            Error         interface{}
+            Authenticated bool
+            Username      string
+        }{
+            Categories:    categories,
+            Error:         nil,
+            Authenticated: authenticated,
+            Username:      currentUser,
+        }
+        tmpl := template.Must(template.ParseFiles("templates/create-post.html"))
+        tmpl.Execute(w, data)
+    } else if r.Method == http.MethodPost {
+        r.ParseForm()
+        category := r.FormValue("category")
+        title := r.FormValue("title")
+        content := r.FormValue("content")
 
-		respChan := make(chan models.ResponseDetails, 1)
-		var wg sync.WaitGroup
+        respChan := make(chan models.ResponseDetails, 1)
+        var wg sync.WaitGroup
 
-		// Defines the paylod sent to the backend
-		payload := models.Post{
-			Category: category,
-			Title:    title,
-			Content:  content,
-		}
+        // Defines the payload sent to the backend
+        payload := models.Post{
+            Category: category,
+            Title:    title,
+            Content:  content,
+        }
 
-		// Extract the session cookie from the header
-		cookieToken, err := r.Cookie("session_token")
-		if err != nil {
-			// User must be logged-in to continue
-			message := `You are not authorized! Please <a href="/login">login</a> before creating a post.`
-			tmpl := template.Must(template.ParseFiles("templates/create-post.html"))
-			tmpl.Execute(w, map[string]interface{}{
-				"Error": template.HTML(message),
-			})
-			return
-		}
+        // Extract the session cookie from the header
+        cookieToken, err := r.Cookie("session_token")
+        if err != nil {
+            // User must be logged-in to continue
+            message := `You are not authorized! Please <a href="/login">login</a> before creating a post.`
+            tmpl := template.Must(template.ParseFiles("templates/create-post.html"))
+            tmpl.Execute(w, map[string]interface{}{
+                "Error": template.HTML(message),
+            })
+            return
+        }
 
-		// Calls the function that sends request to the server
-		wg.Add(1)
-		go func() {
-			SendCreatePostRequest(cookieToken, payload, &wg, respChan)
-		}()
+        // Calls the function that sends request to the server
+        wg.Add(1)
+        go func() {
+            SendCreatePostRequest(cookieToken, payload, &wg, respChan)
+        }()
 
-		go func() {
-			wg.Wait()
-			close(respChan)
-		}()
+        go func() {
+            wg.Wait()
+            close(respChan)
+        }()
 
-		responseDetails := <-respChan
+        responseDetails := <-respChan
 
-		if responseDetails.Status == http.StatusCreated {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
-		} else if responseDetails.Status == http.StatusUnauthorized {
-			// responseDetails.Status = http.StatusUnauthorized
-			responseDetails.Message = `You are not authorized! Please <a href="/login">login</a> before creating a post.`
-			tmpl := template.Must(template.ParseFiles("templates/create-post.html"))
-			tmpl.Execute(w, map[string]interface{}{
-				"Error": template.HTML(responseDetails.Message),
-			})
-		} else {
-			// responseDetails.Status = resp.StatusCode
-			responseDetails.Message = "Oops! Something went wrong. Failed to create post."
-			tmpl := template.Must(template.ParseFiles("templates/create-post.html"))
-			tmpl.Execute(w, map[string]interface{}{
-				"Error": responseDetails.Message,
-			})
-		}
-	}
+        if responseDetails.Status == http.StatusCreated {
+            http.Redirect(w, r, "/", http.StatusSeeOther)
+        } else if responseDetails.Status == http.StatusUnauthorized {
+            responseDetails.Message = `You are not authorized! Please <a href="/login">login</a> before creating a post.`
+            tmpl := template.Must(template.ParseFiles("templates/create-post.html"))
+            tmpl.Execute(w, map[string]interface{}{
+                "Error": template.HTML(responseDetails.Message),
+            })
+        } else {
+            responseDetails.Message = "Oops! Something went wrong. Failed to create post."
+            tmpl := template.Must(template.ParseFiles("templates/create-post.html"))
+            tmpl.Execute(w, map[string]interface{}{
+                "Error": responseDetails.Message,
+            })
+        }
+    }
 }
 
 func SendCreatePostRequest(cookie *http.Cookie, payload models.Post, waitGroup *sync.WaitGroup, respChan chan models.ResponseDetails) {
