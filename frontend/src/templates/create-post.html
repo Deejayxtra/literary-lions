@@ -30,23 +30,25 @@
             <p>{{.Error}}</p>
         </div>
         {{end}}
-        <form id="create-post-form" method="POST" action="/create-post">
-            <label for="category">Category:</label>
-            <select name="category" id="category">
-                <option value="">Select a Category</option>
-                <!-- Populate categories dynamically -->
-                {{range .Categories}}
-                <option value="{{.}}">{{.}}</option>
-                {{end}}
-            </select>
-            <label for="title">Title:</label>
-            <input type="text" id="title" name="title" required>
+            <form method="POST" action="/create-post">
+                <label for="category">Category:</label>
+                <select name="category" id="category" required>
+                    {{range .Categories}}
+                    <option value="{{.}}">{{.}}</option>
+                    {{end}}
+                </select>
 
-            <label for="content">Content:</label>
-            <textarea id="content" name="content" rows="12" required></textarea>
+                <label for="title">Title:</label>
+                <input type="text" name="title" id="title" required>
 
-            <button type="submit">Create Post</button>
-        </form>
+                <label for="content">Content:</label>
+                <textarea name="content" id="content" rows="10" required></textarea>
+
+                <button type="submit">Create Post</button>
+            </form>
+        {{if .Error}}
+        <div class="error">{{.Error}}</div>
+        {{end}}
     </main>
     <footer>
         <p>&copy; 2024 Forum</p>
