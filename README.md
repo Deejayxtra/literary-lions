@@ -77,7 +77,9 @@ docker run -d --name literary-lions-backend -p 8080:8080 literary-lions-backend
 
 
 -d: Runs the container in detached mode (in the background).
---name literary-lions-backend: Names the container literary-lions-backend.
+--name literary-lions-backend: Names the container literary-lions-backend
+
+(../../literary-lions$ docker run -d --name literary-lions-backend -p 8080:8080 literary-lions-backend)
 -p 8080:8080: Maps port 8080 of the container to port 8080 on your local machine.
 literary-lions-backend: This is the name of the Docker image you built.
 
