@@ -1,0 +1,29 @@
+version: '3'
+services:
+  backend:
+    build: ./backend
+    container_name: literary-lions-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_PATH=/app/src/literary_lions.db
+    volumes:
+      - ./backend/src/cmd/literary_lions.db:/app/src/literary_lions.db
+    networks:
+      - literary-lions-network
+
+  frontend:
+    build: ./frontend
+    container_name: literary-lions-frontend
+    ports:
+      - "8000:8000"
+    environment:
+      - API_URL=http://backend:8080/api/v1.0
+    depends_on:
+      - backend
+    networks:
+      - literary-lions-network
+
+networks:
+  literary-lions-network:
+    driver: bridge
