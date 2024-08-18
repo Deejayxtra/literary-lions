@@ -1,6 +1,11 @@
 # Start from the Go base image for building
 FROM golang:1.21.5 AS builder
 
+# Adding metadata labels
+LABEL maintainer="femsworld@gmail.com"
+LABEL version="1.0"
+LABEL description="Docker image for Literary Lions backend application"
+
 # Set the working directory inside the container
 WORKDIR /app
 

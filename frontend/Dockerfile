@@ -10,26 +10,26 @@ LABEL description="Docker image for Literary Lions frontend application"
 WORKDIR /app
 
 # Copy go.mod and go.sum files and download dependencies
-COPY frontend/go.mod frontend/go.sum ./
+COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy the entire frontend directory
-COPY frontend/ /app/frontend
+COPY . /app
 
 # Set the working directory to frontend/src
-WORKDIR /app/frontend/src
+WORKDIR /app/src
 
 # Build the Go application
-RUN go build -o /frontend-main main.go
+RUN go build -o /main main.go
 
 # Final stage: Create a small image for runtime
 FROM golang:1.21.5
 
 # Copy the built application from the builder stage
-COPY --from=builder /frontend-main /frontend-main
+COPY --from=builder /main /main
 
 # Expose the port that your application will run on (if applicable)
 EXPOSE 8000
 
 # Set the entry point command to run your Go app
-CMD ["/frontend-main"]
+CMD ["/main"]
