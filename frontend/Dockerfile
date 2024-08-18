@@ -1,4 +1,4 @@
-# Start from the Go base image
+# Stage 1: Build Stage
 FROM golang:1.21.5 AS builder
 
 # Adding metadata labels
@@ -22,14 +22,24 @@ WORKDIR /app/src
 # Build the Go application
 RUN go build -o /main main.go
 
-# Final stage: Create a small image for runtime
+# Stage 2: Runtime Stage
 FROM golang:1.21.5
+
+# Create necessary directories
+RUN mkdir -p /app/src
 
 # Copy the built application from the builder stage
 COPY --from=builder /main /main
 
-# Expose the port that your application will run on (if applicable)
+# Ensure the templates and static directories are copied
+COPY --from=builder /app/src/templates /app/src/templates
+COPY --from=builder /app/src/static /app/src/static
+
+# Set the working directory for runtime
+WORKDIR /app
+
+# Expose the port your application will run on
 EXPOSE 8000
 
-# Set the entry point command to run your Go app
+# Command to run your Go application
 CMD ["/main"]
