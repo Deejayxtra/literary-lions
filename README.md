@@ -1,146 +1,125 @@
 # literary-lions
 
-To generate swagger UI
-<!-- swag init --dir /home/femsworld/literary-lions/backend/src --output /home/femsworld/literary-lions/backend/src/docs -->
-swag init -g cmd/main.go
+The Literary Lions Application is a web-based platform that allows users to create, read, update, and delete posts, as well as like, dislike, and comment on posts. The application is divided into two main components: the backend, built using Go and Gin, and the frontend, built using Go's net/http package.
 
-...././.:~/literary-lions/backend$ swag init --dir ./src/cmd --output ./docs
+## Features
 
-http://localhost:8080/swagger/index.html
+### Backend
+- **User Authentication**: Register, login, and logout functionalities.
+- **Post Management**: Create, read, update, delete posts.
+- **Comment Management**: Add comments to posts.
+- **Like/Dislike System**: Users can like or dislike posts and comments.
+- **Category Filtering**: View posts filtered by category.
+- **Swagger Documentation**: API documentation available via Swagger UI.
 
+### Frontend
+- **User Interface**: HTML templates served via the Go net/http package.
+- **CRUD Operations**: Interface for creating, viewing, updating, and deleting posts.
+- **User Interaction**: Like, dislike, and comment on posts.
+- **Profile Management**: Update user profiles.
 
+## Prerequisites
 
-// Package docs contains auto-generated Swagger API documentation.
-// To generate or update the documentation, run `swag init` in the project root .
-// (~/literary-lions/backend$ swag init -g src/cmd/main.go)
-//Then go the backend from ~/literary-lions/backend/src/cmd$ go run .
+- Go 1.21.5 or later
+- Docker
+- Docker Compose
 
-You can see the swagger UI on: http://localhost:8080/swagger/index.html
+## Running the Application from the Terminal
 
+### Backend
 
-**Note:**
-Handler => login func ====DO SAME TO LOGIN====  *** Define error message explicitly***
-if err := auth.RegisterUser(db, creds.Email, creds.Username, creds.Password); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Registration failed"})           # Define error message explicitly
-		return
-	}
+1. Navigate to the Backend Directory:
+2. Run the Backend Server:
+```bash
+   cd backend/src/cmd
+	go run main.go
+```
+The backend server will start on http://localhost:8080.
 
-This is login request from the frontend:
-email: admin@mail.com, password: admin123
-row: &{<nil> 0xc00012a240}
-[GIN] 2024/08/01 - 07:04:13 | 200 |   81.618298ms |       127.0.0.1 | POST     "/login"
-[GIN] 2024/08/01 - 07:04:15 | 500 |     166.878µs |       127.0.0.1 | GET      "/api/posts"
+### Frontend
 
+1. Navigate to the frontend Directory:
+2. Run the Frontend Server:
+```bash
+   cd frontend/src
+	go run main.go
+```
+The frontend server will start on http://localhost:8000.
 
+## Building Docker Images
 
+### Backend
 
+1. Navigate to the Backend Directory:
+2. Build the Docker Image:
+```bash
+   cd backend
+	docker build -t literary-lions-backend .
+```
+After building the docker image, to run the docker image, from the same terminal:
+```bash
+	docker run -d --name literary-lions-backend -p 8080:8080 literary-lions-backend
+```
+The backend server will start on http://localhost:8080.
 
-Short guide on how to build and run docker containers
+### Frontend
 
-Build the Docker Images
-You'll need to open your terminal and navigate to the directory where each Dockerfile is located to build the Docker images.
+1. Navigate to the Backend Directory:
+2. Build the Docker Image:
+```bash
+   cd backend
+	docker build -t literary-lions-frontend .
+```
+After building the docker image, to run the docker image, from the same terminal:
+```bash
+	ddocker run -d --name literary-lions-frontend -p 8000:8000 literary-lions-frontend
+```
+The frontend server will start on http://localhost:8000.
 
-1. Navigate to Backend Directory and Build Backend Image
-Open your terminal and navigate to the backend directory:
+## Running the Application with Docker Compose
 
-cd ~/literary-lions/backend/
+1. Navigate to the Project Root Directory:
+2. Run the Docker Compose Command:
 
-Now, build the Docker image for the backend:
+```bash
+   cd ~/literary-lions
+	docker-compose up --build .
+```
+This will build and start both the frontend and backend containers.
+3. Access the Application:
 
-docker build -t literary-lions-backend .
+- Frontend: Open http://localhost:8000 in your browser.
+- Backend API: API endpoints are available at http://localhost:8080/api/v1.0. Swagger documentation is available at http://localhost:8080/swagger/index.html.
 
--t literary-lions-backend: This tags your image with the name literary-lions-backend.
-.: This represents the current directory, which contains the Dockerfile.
+## Application Structure
 
-2. Navigate to Frontend Directory and Build Frontend Image
-Next, navigate to the frontend directory:
+## Backend
 
-cd ~/literary-lions/frontend
+- cmd/main.go: Entry point for the backend application.
+- internal/: Contains the core logic for handlers, models, and middleware.
+- config/: Configuration files.
+- docs/: Swagger API documentation files.
+- literary_lions.db: SQLite database file.
 
-Build the Docker image for the frontend:
+## Frontend
 
-docker build -t literary-lions-frontend .
-
-
--t literary-lions-frontend: This tags your image with the name literary-lions-frontend.
-.: Again, this represents the current directory.
-
-
-
-Step 2: Run the Docker Containers
-Now that you've built the images, you can run the containers.
-
-1. Run the Backend Container
-In the terminal, run the backend container:
-
-docker run -d --name literary-lions-backend -p 8080:8080 literary-lions-backend
-
-
--d: Runs the container in detached mode (in the background).
---name literary-lions-backend: Names the container literary-lions-backend
-
-(../../literary-lions$ docker run -d --name literary-lions-backend -p 8080:8080 literary-lions-backend)
--p 8080:8080: Maps port 8080 of the container to port 8080 on your local machine.
-literary-lions-backend: This is the name of the Docker image you built.
-
-
-2. Run the Frontend Container
-In another terminal, run the frontend container:
-
-docker run -d --name literary-lions-frontend -p 8000:8000 literary-lions-frontend
-
-
--d: Runs the container in detached mode.
---name literary-lions-frontend: Names the container literary-lions-frontend.
--p 8000:8000: Maps port 8000 of the container to port 8000 on your local machine.
-literary-lions-frontend: This is the name of the Docker image you built.
-
-
-Step 3: Verify that the Containers are Running
-To check if your containers are running, use:
-
-docker ps
-
-
-This will list all running containers. You should see both literary-lions-backend and literary-lions-frontend in the list.
-
-Step 4: Access Your Application
-Now you can access your application using your web browser:
-
-Backend API Documentation (Swagger UI):
-Open http://localhost:8080/swagger/index.html to see the Swagger UI for your backend API.
+- src/main.go: Entry point for the frontend application.
+- src/handlers/: Contains handlers for different routes.
+- src/templates/: HTML templates for the frontend.
+- src/static/: Static files like CSS and images.
 
 
-Frontend Application:
-Open http://localhost:8000 to see the frontend of your application.
-Step 5: Managing Containers
+## Explanation of the Sections
 
+1. **Features**: Provides a high-level overview of what the application does.
+2. **Prerequisites**: Lists the tools needed before running or building the application.
+3. **Running the Application from the Terminal**: Provides step-by-step instructions to run both the frontend and backend components without Docker.
+4. **Building Docker Images**: Guides on how to build Docker images for both the frontend and backend individually.
+5. **Running the Application with Docker Compose**: Shows how to use Docker Compose to build and run the entire application.
+6. **Application Structure**: Provides a brief overview of the directory structure and the purpose of the main files and directories.
+7. **Contributing**: An open invitation for others to contribute to the project.
+8. **License**: Information about the project's licensing.
 
-Stopping Containers
-To stop the containers, use:
+This README should serve as a comprehensive guide for both developers and users of the Literary Lions Application.
 
-docker stop literary-lions-backend literary-lions-frontend
-
-
-Removing Containers
-If you want to remove the containers after stopping them, use:
-
-docker rm literary-lions-backend literary-lions-frontend
-
-
-Summary of Commands
-Build Backend Image: docker build -t literary-lions-backend .
-Build Frontend Image: docker build -t literary-lions-frontend .
-Run Backend Container: docker run -d --name literary-lions-backend -p 8080:8080 literary-lions-backend
-Run Frontend Container: docker run -d --name literary-lions-frontend -p 8000:8000 literary-lions-frontend
-Check Running Containers: docker ps
-Stop Containers: docker stop literary-lions-backend literary-lions-frontend
-Remove Containers: docker rm literary-lions-backend literary-lions-frontend
-
-
-Building the containers from yaml file
-from the root directory:
-(~/literary-lions$ docker-compose up --build
-)
-docker-compose up --build
 
