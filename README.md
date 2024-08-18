@@ -108,6 +108,93 @@ This will build and start both the frontend and backend containers.
 - src/templates/: HTML templates for the frontend.
 - src/static/: Static files like CSS and images.
 
+### Project Tree
+├── README.md
+├── backend
+│   ├── Dockerfile
+│   ├── docs
+│   │   ├── docs.go
+│   │   ├── swagger.json
+│   │   └── swagger.yaml
+│   ├── docs_backup2
+│   │   ├── docs.go
+│   │   ├── swagger.json
+│   │   └── swagger.yaml
+│   ├── go.mod
+│   ├── go.sum
+│   ├── literary-lions_ERD.pdf
+│   ├── literary_lions.db
+│   └── src
+│       ├── Dockerfile
+│       ├── cmd
+│       │   ├── cookies.txt
+│       │   ├── forum.db
+│       │   ├── literary_lions.db
+│       │   └── main.go
+│       ├── config
+│       │   └── config.go
+│       └── internal
+│           ├── db
+│           │   ├── db.go
+│           │   └── schema.sql
+│           ├── handlers
+│           │   ├── auth.go
+│           │   ├── handlers.go
+│           │   ├── likeDislikeHandler.go
+│           │   ├── posts.go
+│           │   └── userRegister.go
+│           ├── middleware
+│           │   └── nocache.go
+│           ├── models
+│           │   ├── comment.go
+│           │   ├── likeDislikeModel.go
+│           │   ├── post.go
+│           │   ├── session.go
+│           │   └── user.go
+│           └── utils
+│               └── utils.go
+├── docker-compose.yml
+├── frontend
+│   ├── Dockerfile
+│   ├── go.mod
+│   ├── go.sum
+│   └── src
+│       ├── app
+│       ├── config
+│       │   └── baseApi.go
+│       ├── handlers
+│       │   ├── auth.go
+│       │   ├── comments.go
+│       │   ├── internalServerError.go
+│       │   ├── like-dislike.go
+│       │   ├── login.go
+│       │   ├── logout.go
+│       │   ├── posts.go
+│       │   ├── profile.go
+│       │   ├── register.go
+│       │   ├── store.go
+│       │   └── template.go
+│       ├── main.go
+│       ├── models
+│       │   └── models.go
+│       ├── sessions.json
+│       ├── static
+│       │   ├── css
+│       │   │   └── styles.css
+│       │   ├── img
+│       │   │   └── pic.jpg
+│       │   └── styles.css
+│       └── templates
+│           ├── create-post.html
+│           ├── index.html
+│           ├── login.html
+│           ├── logout.html
+│           ├── notification.html
+│           ├── post.html
+│           ├── profile-update.html
+│           ├── profile.html
+│           ├── register.html
+│           └── registration-status.html
 
 ## Explanation of the Sections
 
