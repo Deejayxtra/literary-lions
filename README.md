@@ -136,3 +136,11 @@ Run Frontend Container: docker run -d --name literary-lions-frontend -p 8000:800
 Check Running Containers: docker ps
 Stop Containers: docker stop literary-lions-backend literary-lions-frontend
 Remove Containers: docker rm literary-lions-backend literary-lions-frontend
+
+
+Building the containers from yaml file
+from the root directory:
+(~/literary-lions$ docker-compose up --build
+)
+docker-compose up --build
+
