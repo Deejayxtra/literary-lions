@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	"literary-lions/frontend/src/config"
+	"literary-lions/frontend/src/models"
 	"net/http"
 	"sync"
 	"time"
-	"literary-lions/frontend/src/config"
-	"literary-lions/frontend/src/models"
 )
 
 // LoginHandler handles user login and redirects appropriately.
@@ -66,6 +66,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			} else {
 				// Display error notification in case of login failure
 				tmpl := template.Must(template.ParseFiles("templates/login.html"))
+				// tmpl := template.Must(template.ParseFiles("literary-lions/frontend/src/templates/login.html"))
 				tmpl.Execute(w, map[string]interface{}{
 					"Error": template.HTML(response.Message),
 				})
@@ -174,6 +175,6 @@ func SendLoginRequest(credentials models.Credentials, wg *sync.WaitGroup, respCh
 		Success:  true,
 		Token:    token,
 		Username: username,
-		Email:	  email,
+		Email:    email,
 	}
 }

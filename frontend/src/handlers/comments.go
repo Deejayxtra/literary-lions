@@ -48,7 +48,7 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 			wg.Wait()
 			close(respChan)
 		}()
-		
+
 		responseDetails := <-respChan
 
 		// Checks the http status created if OK
@@ -58,6 +58,7 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 			// responseDetails.Status = http.StatusUnauthorized
 			responseDetails.Message = `You are not authorized! Please <a href="/login">login</a> before adding comment.`
 			tmpl := template.Must(template.ParseFiles("templates/post.html"))
+			// tmpl := template.Must(template.ParseFiles("literary-lions/frontend/src/templates/post.html"))
 			tmpl.Execute(w, map[string]interface{}{
 				"Error": template.HTML(responseDetails.Message),
 			})
@@ -65,6 +66,7 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 			// responseDetails.Status = resp.StatusCode
 			responseDetails.Message = "Oops! Something went wrong. Failed to add comment."
 			tmpl := template.Must(template.ParseFiles("templates/post.html"))
+			// tmpl := template.Must(template.ParseFiles("literary-lions/frontend/src/templates/post.html"))
 			tmpl.Execute(w, map[string]interface{}{
 				"Error": responseDetails.Message,
 			})
