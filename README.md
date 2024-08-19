@@ -1,10 +1,11 @@
 # literary-lions
 
-The Literary Lions Application is a web-based platform that allows users to create, read, update, and delete posts, as well as like, dislike, and comment on posts. The application is divided into two main components: the backend, built using Go and Gin, and the frontend, built using Go's net/http package.
+The Literary Lions Application is a web-based platform that allows users to create, read, posts and comment, as well as like or dislike posts and comments. The application is divided into two main components: the backend, built using Go and Gin, and the frontend, built using Go net/http package.
 
 ## Features
 
 ### Backend
+
 - **User Authentication**: Register, login, and logout functionalities.
 - **Post Management**: Create, read, update, delete posts.
 - **Comment Management**: Add comments to posts.
@@ -13,6 +14,7 @@ The Literary Lions Application is a web-based platform that allows users to crea
 - **Swagger Documentation**: API documentation available via Swagger UI.
 
 ### Frontend
+
 - **User Interface**: HTML templates served via the Go net/http package.
 - **CRUD Operations**: Interface for creating, viewing, updating, and deleting posts.
 - **User Interaction**: Like, dislike, and comment on posts.
@@ -30,21 +32,25 @@ The Literary Lions Application is a web-based platform that allows users to crea
 
 1. Navigate to the Backend Directory:
 2. Run the Backend Server:
+
 ```bash
    cd backend/src/cmd
-	go run main.go
+ go run main.go
 ```
-The backend server will start on http://localhost:8080.
+
+The backend server will start on <http://localhost:8080>.
 
 ### Frontend
 
 1. Navigate to the frontend Directory:
 2. Run the Frontend Server:
+
 ```bash
    cd frontend/src
-	go run main.go
+ go run main.go
 ```
-The frontend server will start on http://localhost:8000.
+
+The frontend server will start on <http://localhost:8000>.
 
 ## Building Docker Images
 
@@ -52,48 +58,70 @@ The frontend server will start on http://localhost:8000.
 
 1. Navigate to the Backend Directory:
 2. Build the Docker Image:
+
 ```bash
    cd backend
-	docker build -t literary-lions-backend .
+ docker build -t literary-lions-backend .
 ```
+
 After building the docker image, to run the docker image, from the same terminal:
+
 ```bash
-	docker run -d --name literary-lions-backend -p 8080:8080 literary-lions-backend
+ docker run -d --name literary-lions-backend -p 8080:8080 literary-lions-backend
 ```
-The backend server will start on http://localhost:8080.
+
+The backend server will start on <http://localhost:8080>.
 
 ### Frontend
 
-1. Navigate to the Backend Directory:
+1. Navigate to the Frontend Directory:
 2. Build the Docker Image:
+
 ```bash
-   cd backend
-	docker build -t literary-lions-frontend .
+   cd frontend
+ docker build -t literary-lions-frontend .
 ```
+
 After building the docker image, to run the docker image, from the same terminal:
+
 ```bash
-	ddocker run -d --name literary-lions-frontend -p 8000:8000 literary-lions-frontend
+ docker run -d --name literary-lions-frontend -p 8000:8000 literary-lions-frontend
 ```
-The frontend server will start on http://localhost:8000.
+
+The frontend server will start on <http://localhost:8000>.
 
 ## Running the Application with Docker Compose
 
 1. Navigate to the Project Root Directory:
-2. Run the Docker Compose Command:
+2. Check the docker version installed and use the applicable command:
+3. Run the Docker Compose Command:
 
 ```bash
    cd ~/literary-lions
-	docker-compose up --build .
+   docker-compose --version
+   docker-compose up --build
 ```
-This will build and start both the frontend and backend containers.
-3. Access the Application:
 
-- Frontend: Open http://localhost:8000 in your browser.
-- Backend API: API endpoints are available at http://localhost:8080/api/v1.0. Swagger documentation is available at http://localhost:8080/swagger/index.html.
+or if you're using Docker Compose v2:
+
+```bash
+   cd ~/literary-lions
+   docker compose version
+   docker compose up --build
+```
+
+This will build and start both the frontend and backend containers.
+4. Access the Application:
+Go to your browser and open: <http://localhost:8000/>
+
+### For more information
+
+- Frontend: Open <http://localhost:8000> in your browser.
+- Backend API: API endpoints are available at <http://localhost:8080/api/v1.0>. Swagger documentation is available at <http://localhost:8080/swagger/index.html>.
 
 ## Application Structure
 
-## Backend
+### Backend
 
 - cmd/main.go: Entry point for the backend application.
 - internal/: Contains the core logic for handlers, models, and middleware.
@@ -101,7 +129,7 @@ This will build and start both the frontend and backend containers.
 - docs/: Swagger API documentation files.
 - literary_lions.db: SQLite database file.
 
-## Frontend
+### Frontend
 
 - src/main.go: Entry point for the frontend application.
 - src/handlers/: Contains handlers for different routes.
@@ -109,6 +137,7 @@ This will build and start both the frontend and backend containers.
 - src/static/: Static files like CSS and images.
 
 ### Project Tree
+
 ├── README.md
 ├── backend
 │   ├── Dockerfile
@@ -208,5 +237,3 @@ This will build and start both the frontend and backend containers.
 8. **License**: Information about the project's licensing.
 
 This README should serve as a comprehensive guide for both developers and users of the Literary Lions Application.
-
-
