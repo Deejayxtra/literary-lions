@@ -99,4 +99,7 @@ type Message struct {
 type Data struct {
 	Posts         []Post
 	Authenticated bool
+	Status	  int
+	Message   string
+	Success  bool
 }

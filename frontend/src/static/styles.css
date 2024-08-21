@@ -90,7 +90,8 @@ button:hover {
     margin: 0 12rem ;
 }
 
-.sticky-filter form {
+.sticky-filter form,
+.sticky-filter .filter-buttons {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -261,4 +262,12 @@ footer {
 
 .update button:hover {
     background-color: #4cae4c;
+}
+.filter-buttons a {
+    background-color: #5cb85c;
+    color: white;
+    cursor: pointer;
+    text-decoration: none;
+    border-radius: 4px;
+    padding: 5px 5px;
 }

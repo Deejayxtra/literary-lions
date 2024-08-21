@@ -1,13 +1,11 @@
 package handlers
 
 import (
-	"literary-lions/backend/src/internal/models"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
-
 	"github.com/gin-gonic/gin"
+    "literary-lions/backend/src/internal/models"
 )
 
 // AddComment godoc
@@ -125,12 +123,14 @@ func CreatePost(c *gin.Context) {
 // GetAllPosts handles the retrieval of all posts using Gin
 // GetAllPosts handles the retrieval of all posts with optional advanced search filters.
 func GetAllPosts(c *gin.Context) {
+    var posts []models.Post
 	// Retrieve query parameters for filtering
 	title := c.Query("keyword")
 	startDate := c.Query("start_date")
 	endDate := c.Query("end_date")
-
 	category := c.Query("category")
+    filter := c.Query("filter")
+
 
 	// Parse the start and end dates if provided
 	var parsedStartDate, parsedEndDate time.Time
@@ -150,10 +150,38 @@ func GetAllPosts(c *gin.Context) {
 		}
 	}
 
-	// Call the function to get all posts from the database with the provided filters
-	posts, err := models.GetFilteredPosts(category, title, parsedStartDate, parsedEndDate)
+    var userID int
+
+    // Handle different filters like my-posts and liked-posts
+    switch filter {
+    case "my-posts":
+        // Retrieve the user ID from the context (assuming it's set by the middleware)
+        userIDValue, exists := c.Get("userID")
+        if !exists {
+            // If the user ID is not found, return an unauthorized error
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+            return
+        }
+        userID = userIDValue.(int)
+        posts, err = models.GetUserPosts(userID)
+    case "liked-posts":
+        // Retrieve the user ID from the context (assuming it's set by the middleware)
+        userIDValue, exists := c.Get("userID")
+        if !exists {
+            // If the user ID is not found, return an unauthorized error
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+            return
+        }
+        userID = userIDValue.(int)
+        posts, err = models.GetLikedPostsByUserID(userID)
+    default:
+        // Implement function to handle combined search/filter logic
+        posts, err = models.GetFilteredPosts(category, title, parsedStartDate, parsedEndDate)
+    }
+
+	// // Call the function to get all posts from the database with the provided filters
+	// posts, err := models.GetFilteredPosts(category, title, parsedStartDate, parsedEndDate)
 	if err != nil {
-        log.Print("Err: ", err.Error())
 		// If the operation fails, return an internal server error
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -231,46 +259,4 @@ func GetPostByID(c *gin.Context) {
 
     // Return the response as a JSON object
     c.JSON(http.StatusOK, response)
-}
-
-// GetPostsByCategory godoc
-// @Summary Get posts by category
-// @Description Retrieve all posts that belong to a specific category
-// @Tags posts
-// @Accept json
-// @Produce json
-// @Param category path string true "Category"
-// @Success 200 {array} models.Post
-// @Failure 404 {object} gin.H
-// @Failure 500 {object} gin.H
-// @Router /api/posts/category/{category} [get]
-// GetPostsByCategory handles the retrieval of posts filtered by category using Gin
-func GetPostsByCategory(c *gin.Context) {
-    // Call the function to get all posts from the database
-    posts, err := models.GetAllPosts(db)
-    if err != nil {
-        // If the operation fails, return an internal server error
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-
-    // Get the category from the URL parameter
-    category := c.Param("category")
-    var filteredPosts []models.Post
-
-    // Filter the posts by the specified category
-    for _, post := range posts {
-        if post.Category == category {
-            filteredPosts = append(filteredPosts, post)
-        }
-    }
-
-    // If no posts are found in the specified category, return a not found error
-    if len(filteredPosts) == 0 {
-        c.JSON(http.StatusNotFound, gin.H{"message": "No posts found for this category"})
-        return
-    }
-
-    // Return the filtered posts as a JSON response
-    c.JSON(http.StatusOK, filteredPosts)
 }

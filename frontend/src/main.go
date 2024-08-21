@@ -10,7 +10,6 @@ func main() {
 
 	// Define your handlers for routes
 	http.HandleFunc("/", handlers.ShowPosts)
-	http.HandleFunc("/posts/category", handlers.ShowPostsByCategory)
 	http.HandleFunc("/post", handlers.ShowPostByID)
 	http.HandleFunc("/postlike", handlers.LikePost)
 	http.HandleFunc("/postdislike", handlers.DislikePost)

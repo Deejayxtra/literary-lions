@@ -25,200 +25,150 @@ func truncateContent(content string, limit int) string {
 }
 
 func ShowPosts(w http.ResponseWriter, r *http.Request) {
-	// Get the search query parameters
-	keyword := r.URL.Query().Get("query")
-	category := r.URL.Query().Get("category")
-	startDate := r.URL.Query().Get("start_date")
-	endDate := r.URL.Query().Get("end_date")
+    // Get the search query parameters
+    keyword := r.URL.Query().Get("keyword")
+    category := r.URL.Query().Get("category")
+    startDate := r.URL.Query().Get("start_date")
+    endDate := r.URL.Query().Get("end_date")
+    filter := r.URL.Query().Get("filter")
 
-	// Construct the API request URL with query parameters
-	apiURL := config.BaseApi + "/posts?"
-	if keyword != "" {
-		apiURL += "keyword=" + keyword + "&"
-	}
-	if category != "" {
-		apiURL += "category=" + category + "&"
-	}
-	if startDate != "" {
-		apiURL += "start_date=" + startDate + "&"
-	}
-	if endDate != "" {
-		apiURL += "end_date=" + endDate + "&"
-	}
+    var filterIsSet bool
+    var cookie *http.Cookie
 
-	// Make an HTTP GET request to the /api/posts endpoint
-	resp, err := http.Get(apiURL)
-	if err != nil {
-		log.Print("Error1: ", err.Error())
-		message := "Failed to fetch posts"
-		StatusInternalServerError(w, message)
-		return
-	}
-	defer resp.Body.Close()
+    // Construct the API request URL with query parameters
+    apiURL := config.BaseApi + "/posts?"
+	filteredURL := config.BaseApi + "/filtered-posts?"
+    if keyword != "" {
+        apiURL += "keyword=" + keyword + "&"
+    }
+    if category != "" {
+        apiURL += "category=" + category + "&"
+    }
+    if startDate != "" {
+        apiURL += "start_date=" + startDate + "&"
+    }
+    if endDate != "" {
+        apiURL += "end_date=" + endDate + "&"
+    }
+    if filter != "" {
+        filterIsSet = true
+        filteredURL += "filter=" + filter + "&"
+        // Extract the session cookie from the header
+        var err error
+        cookie, err = r.Cookie("session_token")
+        if err != nil {
+            // User must be logged in to continue
+            message := `You are not authorized! Please <a href="/login">login</a> before checking My posts.`
+            tmpl := template.Must(template.ParseFiles("templates/index.html"))
+            tmpl.Execute(w, map[string]interface{}{
+                "Error": template.HTML(message),
+            })
+            return
+        }
+    }
 
-	// Read the response body
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Print("Error2: ", err.Error())
-		message := "Failed to fetch posts"
-		StatusInternalServerError(w, message)
-		// http.Error(w, "Failed to read response", http.StatusInternalServerError)
-		return
-	}
+    respChan := make(chan models.Data, 1)
+    var wg sync.WaitGroup
 
-	// Parse the JSON response into a slice of Post models
-	var posts []models.Post
-	err = json.Unmarshal(body, &posts)
-	if err != nil {
-		message := "Error rendering template"
-		StatusInternalServerError(w, message)
-		log.Fatalf("Error rendering template: %v", err)
-		return
-	}
+    wg.Add(1)
+    go func() {
+        defer wg.Done() // Ensures the wait group counter is decremented when the goroutine finishes
+        if filterIsSet {
+            SendShowPostsRequestFilter(cookie, filteredURL, respChan)
+        } else {
+            SendShowPostsRequest(apiURL, respChan)
+        }
+    }()
 
-	// Handle the case where no posts match the search criteria
-	if len(posts) == 0 {
-		// Get the authentication status and the currentUser if any
-		currentUser, authenticated := isAuthenticated(r)
-		// No posts found, so display a friendly message
-		data := struct {
-			Posts         []models.Post
-			Authenticated bool
-			Categories    []string
-			Username      string
-			NoPostsFound  bool
-			SearchMessage string
-		}{
-			Posts:         posts,
-			Authenticated: authenticated,
-			Categories:    []string{"Random", "News", "Sport", "Technology", "Science", "Health"},
-			Username:      currentUser,
-			NoPostsFound:  true,
-			SearchMessage: "No posts found for the selected criteria.",
-		}
+    wg.Wait()
+    close(respChan)
 
-		RenderTemplate(w, "index.html", data)
-		return
-	}
+    response := <-respChan
 
-	// Truncate the content of each post
-	for i := range posts {
-		posts[i].Content = truncateContent(posts[i].Content, 150)
-	}
+    if !response.Success {
+        handleErrorResponse(w, response)
+        return
+    }
 
-	// Get the authentication status and the currentUser if any
-	currentUser, authenticated := isAuthenticated(r)
+    // Use the posts received from the channel
+    posts := response.Posts
 
-	// Hardcoded categories for now. Might be nice to add feature for creating it and make it dynamic later
-	categories := []string{"Random", "News", "Sport", "Technology", "Science", "Health"}
+    // Handle the case where no posts match the search criteria
+    if len(posts) == 0 {
+        currentUser, authenticated := isAuthenticated(r)
+        data := struct {
+            Posts         []models.Post
+            Authenticated bool
+            Categories    []string
+            Username      string
+            NoPostsFound  bool
+            SearchMessage string
+        }{
+            Posts:         posts,
+            Authenticated: authenticated,
+            Categories:    []string{"Random", "News", "Sport", "Technology", "Science", "Health"},
+            Username:      currentUser,
+            NoPostsFound:  true,
+            SearchMessage: "No posts found for the selected criteria.",
+        }
 
-	data := struct {
-		Posts         []models.Post
-		Authenticated bool
-		Categories    []string
-		Username      string
-		NoPostsFound  bool
-	}{
-		Posts:         posts,
-		Authenticated: authenticated,
-		Categories:    categories,
-		Username:      currentUser,
-		NoPostsFound:  false,
-	}
+        RenderTemplate(w, "index.html", data)
+        return
+    }
 
-	// Render the template with posts and authentication status
-	RenderTemplate(w, "index.html", data)
+    // Truncate the content of each post
+    for i := range posts {
+        posts[i].Content = truncateContent(posts[i].Content, 150)
+    }
+
+    // Get the authentication status and the currentUser if any
+    currentUser, authenticated := isAuthenticated(r)
+
+    // Hardcoded categories for now
+    categories := []string{"Random", "News", "Sport", "Technology", "Science", "Health"}
+
+    data := struct {
+        Posts         []models.Post
+        Authenticated bool
+        Categories    []string
+        Username      string
+        NoPostsFound  bool
+    }{
+        Posts:         posts,
+        Authenticated: authenticated,
+        Categories:    categories,
+        Username:      currentUser,
+        NoPostsFound:  false,
+    }
+
+    // Render the template with posts and authentication status
+    RenderTemplate(w, "index.html", data)
 }
 
-// Display posts by category.
-func ShowPostsByCategory(w http.ResponseWriter, r *http.Request) {
-	// Extract the category query parameter from the URL
-	category := r.URL.Query().Get("category")
+// Helper function to handle errors and render templates
+func handleErrorResponse(w http.ResponseWriter, response models.Data) {
+    var tmpl *template.Template
+    var err error
 
-	var url string
-	if category == "" {
-		// If category is empty, fetch all posts
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	} else {
-		// If category is specified, fetch posts by category
-		url = config.BaseApi + "/posts/category/" + category
-	}
+    // Load the template
+    tmpl, err = template.ParseFiles("templates/index.html")
+    if err != nil {
+        log.Printf("Template parsing error: %v", err)
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
 
-	// Make an HTTP GET request to the /api/posts endpoint
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Print("Error3: ", err.Error())
-		message := "Failed to fetch posts"
-		StatusInternalServerError(w, message)
-		// http.Error(w, "Failed to fetch posts", http.StatusInternalServerError)
-		return
-	}
-	defer resp.Body.Close()
-
-	// Get the authentication status and the currentUser if any
-	currentUser, authenticated := isAuthenticated(r)
-
-	// Hardcoded categories for now. Might be nice to add feature for creating it and make it dynamic later
-	categories := []string{"Random", "News", "Sport", "Technology", "Science", "Health"}
-
-	// Check response status code
-	if resp.StatusCode == http.StatusNotFound {
-		var emptyPosts []models.Post
-		data := struct {
-			Posts         []models.Post
-			Authenticated bool
-			Categories    []string
-			Username      string
-		}{
-			Posts:         emptyPosts,
-			Authenticated: authenticated,
-			Categories:    categories,
-			Username:      currentUser,
-		}
-
-		// Render the template with posts and authentication status
-		RenderTemplate(w, "index.html", data)
-		return
-	}
-
-	// Read the response body
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		message := "Failed to read response"
-		StatusInternalServerError(w, message)
-		// http.Error(w, "Failed to read response", http.StatusInternalServerError)
-		return
-	}
-
-	// Parse the JSON response into a slice of Post models
-	var posts []models.Post
-	err = json.Unmarshal(body, &posts)
-	if err != nil {
-		message := "Failed to parse response"
-		StatusInternalServerError(w, message)
-		// http.Error(w, "Failed to parse response", http.StatusInternalServerError)
-		return
-	}
-
-	// Truncate the content of each post
-	for i := range posts {
-		posts[i].Content = truncateContent(posts[i].Content, 150)
-	}
-
-	data := struct {
-		Posts         []models.Post
-		Authenticated bool
-		Categories    []string
-		Username      string
-	}{
-		Posts:         posts,
-		Authenticated: authenticated,
-		Categories:    categories,
-		Username:      currentUser,
-	}
-	// Render the template with posts and authentication status
-	RenderTemplate(w, "index.html", data)
+    if response.Status == http.StatusUnauthorized {
+        response.Message = `You are not authorized! Please <a href="/login">login</a> before creating a post.`
+        tmpl.Execute(w, map[string]interface{}{
+            "Error": template.HTML(response.Message),
+        })
+    } else {
+        response.Message = "Oops! Something went wrong. Failed to create post."
+        tmpl.Execute(w, map[string]interface{}{
+            "Error": response.Message,
+        })
+    }
 }
 
 // ShowPostByID handles displaying a post by its ID
@@ -231,7 +181,6 @@ func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		message := "Failed to create request"
 		StatusInternalServerError(w, message)
-		// http.Error(w, "Failed to create request", http.StatusInternalServerError)
 		return
 	}
 
@@ -241,7 +190,6 @@ func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		message := "Failed to fetch post"
 		StatusInternalServerError(w, message)
-		// http.Error(w, "Failed to fetch post", http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
@@ -251,7 +199,6 @@ func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		message := "Failed to read response"
 		StatusInternalServerError(w, message)
-		// http.Error(w, "Failed to read response", http.StatusInternalServerError)
 		return
 	}
 
@@ -261,7 +208,6 @@ func ShowPostByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		message := "Failed to parse response"
 		StatusInternalServerError(w, message)
-		// http.Error(w, "Failed to parse response", http.StatusInternalServerError)
 		return
 	}
 
@@ -470,7 +416,6 @@ func SendGetPostByIdRequest(id string, w http.ResponseWriter, r *http.Request, w
 	if err != nil {
 		message := "Failed to create request"
 		StatusInternalServerError(w, message)
-		// http.Error(w, "Failed to create request", http.StatusInternalServerError)
 		return
 	}
 
@@ -480,7 +425,6 @@ func SendGetPostByIdRequest(id string, w http.ResponseWriter, r *http.Request, w
 	if err != nil {
 		message := "Failed to fetch post"
 		StatusInternalServerError(w, message)
-		// http.Error(w, "Failed to fetch post", http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
@@ -490,7 +434,6 @@ func SendGetPostByIdRequest(id string, w http.ResponseWriter, r *http.Request, w
 	if err != nil {
 		message := "Failed to read response"
 		StatusInternalServerError(w, message)
-		// http.Error(w, "Failed to read response", http.StatusInternalServerError)
 		return
 	}
 
@@ -498,10 +441,8 @@ func SendGetPostByIdRequest(id string, w http.ResponseWriter, r *http.Request, w
 	var response models.PostDetails
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		log.Print("Response: ", response)
 		message := "Failed to parse response"
 		StatusInternalServerError(w, message)
-		// http.Error(w, "Failed to parse response", http.StatusInternalServerError)
 		return
 	}
 
@@ -512,4 +453,127 @@ func SendGetPostByIdRequest(id string, w http.ResponseWriter, r *http.Request, w
 		Dislikes: response.Dislikes,
 		Status:   resp.StatusCode,
 	}
+}
+
+
+func SendShowPostsRequest(apiURL string, respChan chan models.Data) {
+
+    req, err := http.NewRequest("GET", apiURL, nil)
+    if err != nil {
+        respChan <- models.Data{
+            Success: false,
+            Message: fmt.Sprintf("error creating request: %v", err),
+        }
+        return
+    }
+
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        respChan <- models.Data{
+            Success: false,
+            Message: fmt.Sprintf("Failed to fetch post: %v", err),
+        }
+        return
+    }
+    defer resp.Body.Close()
+
+    body, err := ioutil.ReadAll(resp.Body)
+    if err != nil {
+        respChan <- models.Data{
+            Success: false,
+            Message: fmt.Sprintf("Failed to read response: %v", err),
+        }
+        return
+    }
+
+    // Check response status code
+    if resp.StatusCode != http.StatusOK {
+        respChan <- models.Data{
+            Success: false,
+            Message: fmt.Sprintf("Unexpected status code: %d", resp.StatusCode),
+        }
+        return
+    }
+
+    // Unmarshal the response directly into a slice of posts
+    var posts []models.Post
+    if err := json.Unmarshal(body, &posts); err != nil {
+        respChan <- models.Data{
+            Success: false,
+            Message: fmt.Sprintf("error unmarshaling response: %v", err),
+        }
+        return
+    }
+
+    // Successfully return the posts
+    respChan <- models.Data{
+        Success: true,
+        Posts:    posts,
+        Message: "Posts fetched successfully",
+    }
+}
+
+
+func SendShowPostsRequestFilter(cookie *http.Cookie, apiURL string, respChan chan models.Data) {
+    // Create a new GET request
+    req, err := http.NewRequest("GET", apiURL, nil)
+	// req, err := http.NewRequest("GET", config.BaseApi+"/filtered-posts", nil)
+    if err != nil {
+        respChan <- models.Data{
+            Success: false,
+            Message: fmt.Sprintf("Error creating request: %v", err),
+        }
+        return
+    }
+
+    // Add the session cookie to the request
+    req.AddCookie(cookie)
+
+    // Use an http.Client to make the request
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        respChan <- models.Data{
+            Success: false,
+            Message: fmt.Sprintf("Failed to fetch post: %v", err),
+        }
+        return
+    }
+    defer resp.Body.Close()
+
+    body, err := ioutil.ReadAll(resp.Body)
+    if err != nil {
+        respChan <- models.Data{
+            Success: false,
+            Message: fmt.Sprintf("Failed to read response: %v", err),
+        }
+        return
+    }
+
+    // Check response status code
+    if resp.StatusCode != http.StatusOK {
+        respChan <- models.Data{
+            Success: false,
+            Message: fmt.Sprintf("Unexpected status code: %d", resp.StatusCode),
+        }
+        return
+    }
+
+    // Unmarshal the response directly into a slice of posts
+    var posts []models.Post
+    if err := json.Unmarshal(body, &posts); err != nil {
+        respChan <- models.Data{
+            Success: false,
+            Message: fmt.Sprintf("Error unmarshaling response: %v", err),
+        }
+        return
+    }
+
+    // Successfully return the posts
+    respChan <- models.Data{
+        Success: true,
+        Posts:   posts,
+        Message: "Posts fetched successfully",
+    }
 }

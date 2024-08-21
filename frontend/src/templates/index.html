@@ -34,7 +34,7 @@
             <h2>Posts</h2>
             <div>
                 <form action="/" method="GET">
-                    <input type="text" name="query" placeholder="Search posts...">
+                    <input type="text" name="keyword" placeholder="Search posts by title...">
                     <select name="category">
                         <option value="">All Categories</option>
                         <option value="Random">Random</option>
@@ -49,9 +49,14 @@
                     <input type="date" name="end_date">
                     <button type="submit">Search</button>
                 </form>
-
             </div>
         </div>
+        {{ if .Authenticated }}
+            <div class="filter-buttons">
+                <a href="/?filter=my-posts" class="button">My Posts</a>
+                <a href="/?filter=liked-posts" class="button">Liked Posts</a>
+            </div>
+        {{ end }}
     </div>
     <main>
         <div class="posts">

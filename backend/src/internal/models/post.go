@@ -2,7 +2,6 @@ package models
 
 import (
 	"database/sql"
-	"log"
 	"strings"
 	"time"
 )
@@ -43,10 +42,10 @@ func GetAllPosts(db *sql.DB) ([]Post, error) {
 	rows, err := db.Query("SELECT id, title, content, category, user_id, created_at FROM posts ORDER BY created_at DESC")
 	if err != nil {
 		if err == sql.ErrNoRows {
-			log.Print("Empty post")
+
 			return []Post{}, nil // Return an empty slice if no posts are found
 		}
-		log.Print("Error from db Post ", err.Error())
+
 		return nil, err
 	}
 	defer rows.Close()
@@ -104,32 +103,6 @@ func GetPostByID(postID int) (Post, error) {
 	
 	return post, nil
 }
-
-// ValidateSession retrieves the user ID from a session token and checks if the session is still valid.
-// Parameters:
-//   - token: The session token to validate.
-//
-// Returns:
-//   - int: The user ID associated with the session if valid.
-//   - error: An error if the session is invalid or if any other issue occurs; otherwise, nil.
-
-// func ValidateSession(token string) (int, error) {
-// 	var userID int
-// 	var expiresAt time.Time
-
-// 	// Query to get the user ID and expiration time for the given token
-// 	err := db.QueryRow("SELECT user_id, expires_at FROM sessions WHERE token = ?", token).Scan(&userID, &expiresAt)
-// 	if err != nil {
-// 		return 0, err
-// 	}
-
-// 	// Check if the current time is past the expiration time of the session
-// 	if time.Now().After(expiresAt) {
-// 		return 0, errors.New("session expired")
-// 	}
-
-// 	return userID, nil
-// }
 
 // GetFilteredPosts retrieves posts from the database based on the provided filters.
 func GetFilteredPosts(category, title string, startDate, endDate time.Time) ([]Post, error) {
@@ -191,4 +164,76 @@ func GetFilteredPosts(category, title string, startDate, endDate time.Time) ([]P
 	}
 
 	return posts, nil
+}
+
+// GetUserPosts fetches all posts created by the given user.
+func GetUserPosts(userID int) ([]Post, error) {
+	// Query to select posts by user ID
+	rows, err := db.Query("SELECT id, title, content, category, user_id, created_at FROM posts WHERE user_id = ? ORDER BY created_at DESC", userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []Post
+	for rows.Next() {
+		var post Post
+		if err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.Category, &post.UserID, &post.CreatedAt); err != nil {
+			return nil, err
+		}
+
+		// Set the Username field directly, as all posts belong to the same user
+		user, err := GetUser(post.UserID) // Assuming `GetUser` is a function that fetches user details based on `userID`
+		if err != nil {
+			return nil, err
+		}
+		post.Username = user.Username
+
+		posts = append(posts, post)
+	}
+
+	// Check for any errors encountered during the iteration over the rows
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return posts, nil
+}
+
+func GetLikedPostsByUserID(userID int) ([]Post, error) {
+    // SQL query to select liked posts along with the username
+    query := `
+        SELECT p.id, p.title, p.content, p.category, p.user_id, p.created_at, u.username 
+        FROM posts p
+        INNER JOIN post_likes pl ON p.id = pl.post_id
+        INNER JOIN users u ON p.user_id = u.id
+        WHERE pl.user_id = ? AND pl.is_like = 1
+    `
+
+    // Execute the query
+    rows, err := db.Query(query, userID)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    // Slice to hold the result
+    var likedPosts []Post
+
+    // Iterate over the rows
+    for rows.Next() {
+        var post Post
+        // Assuming Post struct has a Username field
+        if err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.Category, &post.UserID, &post.CreatedAt, &post.Username); err != nil {
+            return nil, err
+        }
+        likedPosts = append(likedPosts, post)
+    }
+
+    // Check for any errors encountered during iteration
+    if err := rows.Err(); err != nil {
+        return nil, err
+    }
+
+    return likedPosts, nil
 }

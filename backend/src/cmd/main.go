@@ -51,7 +51,6 @@ func main() {
 	api.POST("/logout", handlers.Logout)
 	api.GET("/posts", handlers.GetAllPosts)
 
-	api.GET("/posts/category/:category", handlers.GetPostsByCategory)
 
 	api.GET("/post/:id", handlers.GetPostByID) // Get a specific post by ID
 
@@ -59,12 +58,14 @@ func main() {
 	api.Use(handlers.AuthMiddleware("user")) // Apply middleware to the group
 
 	{
+		api.GET("/filtered-posts", handlers.GetAllPosts)		   // This is the endpoint to be called when filter query is set
 		api.GET("/users", handlers.GetAllUsers)                    // Apply middleware based on role in the function
 		api.POST("/post", handlers.CreatePost)                     // Create a new post
 		api.PUT("/post/:id", handlers.UpdatePost)                  // Update a specific post by ID
 		api.DELETE("/post/:id", handlers.DeletePost)               // Delete a specific post by ID
 		api.POST("/post/:id/comment", handlers.AddComment)         // Add a comment to a specific post by ID
 		api.PUT("/userprofile-update", handlers.UpdateUserProfile) // Update user profile
+		// api.GET("/user/posts", handlers.GetPostsByUser)			   // Get posts by user
 
 		// Likes and dislikes for posts
 		api.POST("/post/:id/like", handlers.LikePost)       // Like a specific post by ID

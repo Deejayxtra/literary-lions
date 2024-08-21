@@ -11,11 +11,11 @@ import (
 var db *sql.DB
 
 type User struct {
-	ID       int
-	Email    string
-	Username string
-	Password string
-	Role     string
+	ID       	int
+	Email    	string
+	Username 	string
+	Password 	string
+	Role     	string
 }
 
 // SetDatabase initializes the global database instance with the provided database connection.
