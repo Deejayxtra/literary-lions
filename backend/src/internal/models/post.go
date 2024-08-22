@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"fmt"
 	"strings"
 	"time"
 )
@@ -37,15 +38,45 @@ func CreatePost(userID int, title, content, category string) error {
 // Returns:
 //   - []Post: A slice of Post structs containing the details of each post.
 //   - error: An error if the operation fails; otherwise, nil.
-func GetAllPosts(db *sql.DB) ([]Post, error) {
-	// Query to select all posts, including the created_at field and sorting by it in descending order
-	rows, err := db.Query("SELECT id, title, content, category, user_id, created_at FROM posts ORDER BY created_at DESC")
+func GetAllPosts(db *sql.DB, keyword string) ([]Post, error) {
+	// Split the keyword into individual words
+	words := strings.Fields(keyword)
+
+	// Check if there are any words to search for
+	if len(words) == 0 {
+		return nil, fmt.Errorf("no keywords provided for search")
+	}
+
+	// Start building the query
+	query := `
+        SELECT p.id, p.title, p.content, p.category, p.user_id, p.created_at, u.username
+        FROM posts p
+        INNER JOIN users u ON p.user_id = u.id
+        WHERE
+    `
+
+	// Build the WHERE clause with LIKE for each word, joined by AND
+	conditions := []string{}
+	params := []interface{}{}
+
+	for _, word := range words {
+		likeWord := "%" + word + "%"
+		conditions = append(conditions, "p.title LIKE ?")
+		params = append(params, likeWord)
+	}
+
+	// Join conditions with AND to ensure all words must appear in the title
+	query += strings.Join(conditions, " AND ")
+
+	// Add ORDER BY clause to sort by creation date
+	query += " ORDER BY p.created_at DESC"
+
+	// Execute the query with the keyword parameters
+	rows, err := db.Query(query, params...)
 	if err != nil {
 		if err == sql.ErrNoRows {
-
 			return []Post{}, nil // Return an empty slice if no posts are found
 		}
-
 		return nil, err
 	}
 	defer rows.Close()
@@ -53,18 +84,10 @@ func GetAllPosts(db *sql.DB) ([]Post, error) {
 	var posts []Post
 	for rows.Next() {
 		var post Post
-		// Scan each field into the Post struct, including created_at
-		if err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.Category, &post.UserID, &post.CreatedAt); err != nil {
+		// Scan each field into the Post struct
+		if err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.Category, &post.UserID, &post.CreatedAt, &post.Username); err != nil {
 			return nil, err
 		}
-
-		// Fetch the username for each post based on the user ID
-        user, err := GetUser(post.UserID)
-        if err != nil {
-            return nil, err
-        }
-        post.Username = user.Username
-
 		posts = append(posts, post)
 	}
 
@@ -75,7 +98,6 @@ func GetAllPosts(db *sql.DB) ([]Post, error) {
 
 	return posts, nil
 }
-
 // GetPostByID retrieves a specific post by its ID from the database.
 // Parameters:
 //   - postID: The ID of the post to retrieve.

@@ -10,6 +10,7 @@ import (
 	"literary-lions/frontend/src/models"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"unicode/utf8"
@@ -37,27 +38,27 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 
     // Construct the API request URL with query parameters
     apiURL := config.BaseApi + "/posts?"
-	filteredURL := config.BaseApi + "/filtered-posts?"
+    filteredURL := config.BaseApi + "/filtered-posts?"
+
     if keyword != "" {
-        apiURL += "keyword=" + keyword + "&"
+        apiURL += "keyword=" + url.QueryEscape(keyword) + "&"
     }
     if category != "" {
-        apiURL += "category=" + category + "&"
+        apiURL += "category=" + url.QueryEscape(category) + "&"
     }
     if startDate != "" {
-        apiURL += "start_date=" + startDate + "&"
+        apiURL += "start_date=" + url.QueryEscape(startDate) + "&"
     }
     if endDate != "" {
-        apiURL += "end_date=" + endDate + "&"
+        apiURL += "end_date=" + url.QueryEscape(endDate) + "&"
     }
     if filter != "" {
         filterIsSet = true
-        filteredURL += "filter=" + filter + "&"
+        filteredURL += "filter=" + url.QueryEscape(filter) + "&"
         // Extract the session cookie from the header
         var err error
         cookie, err = r.Cookie("session_token")
         if err != nil {
-            // User must be logged in to continue
             message := `You are not authorized! Please <a href="/login">login</a> before checking My posts.`
             tmpl := template.Must(template.ParseFiles("templates/index.html"))
             tmpl.Execute(w, map[string]interface{}{
@@ -72,7 +73,7 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 
     wg.Add(1)
     go func() {
-        defer wg.Done() // Ensures the wait group counter is decremented when the goroutine finishes
+        defer wg.Done()
         if filterIsSet {
             SendShowPostsRequestFilter(cookie, filteredURL, respChan)
         } else {
@@ -90,10 +91,9 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Use the posts received from the channel
     posts := response.Posts
 
-    // Handle the case where no posts match the search criteria
+    // Handle no posts found
     if len(posts) == 0 {
         currentUser, authenticated := isAuthenticated(r)
         data := struct {
@@ -116,15 +116,13 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Truncate the content of each post
+    // Truncate content if necessary
     for i := range posts {
         posts[i].Content = truncateContent(posts[i].Content, 150)
     }
 
-    // Get the authentication status and the currentUser if any
     currentUser, authenticated := isAuthenticated(r)
 
-    // Hardcoded categories for now
     categories := []string{"Random", "News", "Sport", "Technology", "Science", "Health"}
 
     data := struct {
@@ -141,9 +139,9 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
         NoPostsFound:  false,
     }
 
-    // Render the template with posts and authentication status
     RenderTemplate(w, "index.html", data)
 }
+
 
 // Helper function to handle errors and render templates
 func handleErrorResponse(w http.ResponseWriter, response models.Data) {
