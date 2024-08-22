@@ -64,8 +64,10 @@
             <article>
                 <h3><a href="/post?id={{.ID}}">{{.Title}}</a></h3>
                 <p>{{.Content}}</p>
-                <p><strong>Category:</strong> {{.Category}}</p>
-                <p><strong>Created by:</strong> {{.Username}}</p>
+                <div class="tags">
+                    <p><strong>Category:</strong> {{.Category}}</p>
+                    <p><strong>Created by:</strong> {{.Username}}</p>
+                </div>
             </article>
             {{else}}
             <p>No posts found.</p>
