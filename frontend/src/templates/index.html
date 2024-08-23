@@ -59,6 +59,11 @@
         {{ end }}
     </div>
     <main>
+        {{if .Error}}
+        <div class="notification notification-error">
+            <p>{{.Error}}</p>
+        </div>
+        {{end}}
         <div class="posts">
             {{range .Posts}}
             <article>
