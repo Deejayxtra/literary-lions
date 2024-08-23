@@ -26,147 +26,146 @@ func truncateContent(content string, limit int) string {
 }
 
 func ShowPosts(w http.ResponseWriter, r *http.Request) {
-    // Get the search query parameters
-    keyword := r.URL.Query().Get("keyword")
-    category := r.URL.Query().Get("category")
-    startDate := r.URL.Query().Get("start_date")
-    endDate := r.URL.Query().Get("end_date")
-    filter := r.URL.Query().Get("filter")
+	// Get the search query parameters
+	keyword := r.URL.Query().Get("keyword")
+	category := r.URL.Query().Get("category")
+	startDate := r.URL.Query().Get("start_date")
+	endDate := r.URL.Query().Get("end_date")
+	filter := r.URL.Query().Get("filter")
 
-    var filterIsSet bool
-    var cookie *http.Cookie
+	var filterIsSet bool
+	var cookie *http.Cookie
 
-    // Construct the API request URL with query parameters
-    apiURL := config.BaseApi + "/posts?"
-    filteredURL := config.BaseApi + "/filtered-posts?"
+	// Construct the API request URL with query parameters
+	apiURL := config.BaseApi + "/posts?"
+	filteredURL := config.BaseApi + "/filtered-posts?"
 
-    if keyword != "" {
-        apiURL += "keyword=" + url.QueryEscape(keyword) + "&"
-    }
-    if category != "" {
-        apiURL += "category=" + url.QueryEscape(category) + "&"
-    }
-    if startDate != "" {
-        apiURL += "start_date=" + url.QueryEscape(startDate) + "&"
-    }
-    if endDate != "" {
-        apiURL += "end_date=" + url.QueryEscape(endDate) + "&"
-    }
-    if filter != "" {
-        filterIsSet = true
-        filteredURL += "filter=" + url.QueryEscape(filter) + "&"
-        // Extract the session cookie from the header
-        var err error
-        cookie, err = r.Cookie("session_token")
-        if err != nil {
-            message := `You are not authorized! Please <a href="/login">login</a> before checking My posts.`
-            tmpl := template.Must(template.ParseFiles("templates/index.html"))
-            tmpl.Execute(w, map[string]interface{}{
-                "Error": template.HTML(message),
-            })
-            return
-        }
-    }
+	if keyword != "" {
+		apiURL += "keyword=" + url.QueryEscape(keyword) + "&"
+	}
+	if category != "" {
+		apiURL += "category=" + url.QueryEscape(category) + "&"
+	}
+	if startDate != "" {
+		apiURL += "start_date=" + url.QueryEscape(startDate) + "&"
+	}
+	if endDate != "" {
+		apiURL += "end_date=" + url.QueryEscape(endDate) + "&"
+	}
+	if filter != "" {
+		filterIsSet = true
+		filteredURL += "filter=" + url.QueryEscape(filter) + "&"
+		// Extract the session cookie from the header
+		var err error
+		cookie, err = r.Cookie("session_token")
+		if err != nil {
+			message := `You are not authorized! Please <a href="/login">login</a> before checking My posts.`
+			tmpl := template.Must(template.ParseFiles("templates/index.html"))
+			tmpl.Execute(w, map[string]interface{}{
+				"Error": template.HTML(message),
+			})
+			return
+		}
+	}
 
-    respChan := make(chan models.Data, 1)
-    var wg sync.WaitGroup
+	respChan := make(chan models.Data, 1)
+	var wg sync.WaitGroup
 
-    wg.Add(1)
-    go func() {
-        defer wg.Done()
-        if filterIsSet {
-            SendShowPostsRequestFilter(cookie, filteredURL, respChan)
-        } else {
-            SendShowPostsRequest(apiURL, respChan)
-        }
-    }()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if filterIsSet {
+			SendShowPostsRequestFilter(cookie, filteredURL, respChan)
+		} else {
+			SendShowPostsRequest(apiURL, respChan)
+		}
+	}()
 
-    wg.Wait()
-    close(respChan)
+	wg.Wait()
+	close(respChan)
 
-    response := <-respChan
+	response := <-respChan
 
-    if !response.Success {
-        handleErrorResponse(w, response)
-        return
-    }
+	if !response.Success {
+		handleErrorResponse(w, response)
+		return
+	}
 
-    posts := response.Posts
+	posts := response.Posts
 
-    // Handle no posts found
-    if len(posts) == 0 {
-        currentUser, authenticated := isAuthenticated(r)
-        data := struct {
-            Posts         []models.Post
-            Authenticated bool
-            Categories    []string
-            Username      string
-            NoPostsFound  bool
-            SearchMessage string
-        }{
-            Posts:         posts,
-            Authenticated: authenticated,
-            Categories:    []string{"Random", "News", "Sport", "Technology", "Science", "Health"},
-            Username:      currentUser,
-            NoPostsFound:  true,
-            SearchMessage: "No posts found for the selected criteria.",
-        }
+	// Handle no posts found
+	if len(posts) == 0 {
+		currentUser, authenticated := isAuthenticated(r)
+		data := struct {
+			Posts         []models.Post
+			Authenticated bool
+			Categories    []string
+			Username      string
+			NoPostsFound  bool
+			SearchMessage string
+		}{
+			Posts:         posts,
+			Authenticated: authenticated,
+			Categories:    []string{"Random", "News", "Sport", "Technology", "Science", "Health"},
+			Username:      currentUser,
+			NoPostsFound:  true,
+			SearchMessage: "No posts found for the selected criteria.",
+		}
 
-        RenderTemplate(w, "index.html", data)
-        return
-    }
+		RenderTemplate(w, "index.html", data)
+		return
+	}
 
-    // Truncate content if necessary
-    for i := range posts {
-        posts[i].Content = truncateContent(posts[i].Content, 150)
-    }
+	// Truncate content if necessary
+	for i := range posts {
+		posts[i].Content = truncateContent(posts[i].Content, 150)
+	}
 
-    currentUser, authenticated := isAuthenticated(r)
+	currentUser, authenticated := isAuthenticated(r)
 
-    categories := []string{"Random", "News", "Sport", "Technology", "Science", "Health"}
+	categories := []string{"Random", "News", "Sport", "Technology", "Science", "Health"}
 
-    data := struct {
-        Posts         []models.Post
-        Authenticated bool
-        Categories    []string
-        Username      string
-        NoPostsFound  bool
-    }{
-        Posts:         posts,
-        Authenticated: authenticated,
-        Categories:    categories,
-        Username:      currentUser,
-        NoPostsFound:  false,
-    }
+	data := struct {
+		Posts         []models.Post
+		Authenticated bool
+		Categories    []string
+		Username      string
+		NoPostsFound  bool
+	}{
+		Posts:         posts,
+		Authenticated: authenticated,
+		Categories:    categories,
+		Username:      currentUser,
+		NoPostsFound:  false,
+	}
 
-    RenderTemplate(w, "index.html", data)
+	RenderTemplate(w, "index.html", data)
 }
-
 
 // Helper function to handle errors and render templates
 func handleErrorResponse(w http.ResponseWriter, response models.Data) {
-    var tmpl *template.Template
-    var err error
+	var tmpl *template.Template
+	var err error
 
-    // Load the template
-    tmpl, err = template.ParseFiles("templates/index.html")
-    if err != nil {
-        log.Printf("Template parsing error: %v", err)
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        return
-    }
+	// Load the template
+	tmpl, err = template.ParseFiles("templates/index.html")
+	if err != nil {
+		log.Printf("Template parsing error: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
-    if response.Status == http.StatusUnauthorized {
-        response.Message = `You are not authorized! Please <a href="/login">login</a> before creating a post.`
-        tmpl.Execute(w, map[string]interface{}{
-            "Error": template.HTML(response.Message),
-        })
-    } else {
-        response.Message = "Oops! Something went wrong. Failed to create post."
-        tmpl.Execute(w, map[string]interface{}{
-            "Error": response.Message,
-        })
-    }
+	if response.Status == http.StatusUnauthorized {
+		response.Message = `You are not authorized! Please <a href="/login">login</a> before creating a post.`
+		tmpl.Execute(w, map[string]interface{}{
+			"Error": template.HTML(response.Message),
+		})
+	} else {
+		response.Message = "Oops! Something went wrong. Failed to create post."
+		tmpl.Execute(w, map[string]interface{}{
+			"Error": response.Message,
+		})
+	}
 }
 
 // ShowPostByID handles displaying a post by its ID
@@ -453,125 +452,123 @@ func SendGetPostByIdRequest(id string, w http.ResponseWriter, r *http.Request, w
 	}
 }
 
-
 func SendShowPostsRequest(apiURL string, respChan chan models.Data) {
 
-    req, err := http.NewRequest("GET", apiURL, nil)
-    if err != nil {
-        respChan <- models.Data{
-            Success: false,
-            Message: fmt.Sprintf("error creating request: %v", err),
-        }
-        return
-    }
+	req, err := http.NewRequest("GET", apiURL, nil)
+	if err != nil {
+		respChan <- models.Data{
+			Success: false,
+			Message: fmt.Sprintf("error creating request: %v", err),
+		}
+		return
+	}
 
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        respChan <- models.Data{
-            Success: false,
-            Message: fmt.Sprintf("Failed to fetch post: %v", err),
-        }
-        return
-    }
-    defer resp.Body.Close()
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		respChan <- models.Data{
+			Success: false,
+			Message: fmt.Sprintf("Failed to fetch post: %v", err),
+		}
+		return
+	}
+	defer resp.Body.Close()
 
-    body, err := ioutil.ReadAll(resp.Body)
-    if err != nil {
-        respChan <- models.Data{
-            Success: false,
-            Message: fmt.Sprintf("Failed to read response: %v", err),
-        }
-        return
-    }
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		respChan <- models.Data{
+			Success: false,
+			Message: fmt.Sprintf("Failed to read response: %v", err),
+		}
+		return
+	}
 
-    // Check response status code
-    if resp.StatusCode != http.StatusOK {
-        respChan <- models.Data{
-            Success: false,
-            Message: fmt.Sprintf("Unexpected status code: %d", resp.StatusCode),
-        }
-        return
-    }
+	// Check response status code
+	if resp.StatusCode != http.StatusOK {
+		respChan <- models.Data{
+			Success: false,
+			Message: fmt.Sprintf("Unexpected status code: %d", resp.StatusCode),
+		}
+		return
+	}
 
-    // Unmarshal the response directly into a slice of posts
-    var posts []models.Post
-    if err := json.Unmarshal(body, &posts); err != nil {
-        respChan <- models.Data{
-            Success: false,
-            Message: fmt.Sprintf("error unmarshaling response: %v", err),
-        }
-        return
-    }
+	// Unmarshal the response directly into a slice of posts
+	var posts []models.Post
+	if err := json.Unmarshal(body, &posts); err != nil {
+		respChan <- models.Data{
+			Success: false,
+			Message: fmt.Sprintf("error unmarshaling response: %v", err),
+		}
+		return
+	}
 
-    // Successfully return the posts
-    respChan <- models.Data{
-        Success: true,
-        Posts:    posts,
-        Message: "Posts fetched successfully",
-    }
+	// Successfully return the posts
+	respChan <- models.Data{
+		Success: true,
+		Posts:   posts,
+		Message: "Posts fetched successfully",
+	}
 }
 
-
 func SendShowPostsRequestFilter(cookie *http.Cookie, apiURL string, respChan chan models.Data) {
-    // Create a new GET request
-    req, err := http.NewRequest("GET", apiURL, nil)
+	// Create a new GET request
+	req, err := http.NewRequest("GET", apiURL, nil)
 	// req, err := http.NewRequest("GET", config.BaseApi+"/filtered-posts", nil)
-    if err != nil {
-        respChan <- models.Data{
-            Success: false,
-            Message: fmt.Sprintf("Error creating request: %v", err),
-        }
-        return
-    }
+	if err != nil {
+		respChan <- models.Data{
+			Success: false,
+			Message: fmt.Sprintf("Error creating request: %v", err),
+		}
+		return
+	}
 
-    // Add the session cookie to the request
-    req.AddCookie(cookie)
+	// Add the session cookie to the request
+	req.AddCookie(cookie)
 
-    // Use an http.Client to make the request
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        respChan <- models.Data{
-            Success: false,
-            Message: fmt.Sprintf("Failed to fetch post: %v", err),
-        }
-        return
-    }
-    defer resp.Body.Close()
+	// Use an http.Client to make the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		respChan <- models.Data{
+			Success: false,
+			Message: fmt.Sprintf("Failed to fetch post: %v", err),
+		}
+		return
+	}
+	defer resp.Body.Close()
 
-    body, err := ioutil.ReadAll(resp.Body)
-    if err != nil {
-        respChan <- models.Data{
-            Success: false,
-            Message: fmt.Sprintf("Failed to read response: %v", err),
-        }
-        return
-    }
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		respChan <- models.Data{
+			Success: false,
+			Message: fmt.Sprintf("Failed to read response: %v", err),
+		}
+		return
+	}
 
-    // Check response status code
-    if resp.StatusCode != http.StatusOK {
-        respChan <- models.Data{
-            Success: false,
-            Message: fmt.Sprintf("Unexpected status code: %d", resp.StatusCode),
-        }
-        return
-    }
+	// Check response status code
+	if resp.StatusCode != http.StatusOK {
+		respChan <- models.Data{
+			Success: false,
+			Message: fmt.Sprintf("Unexpected status code: %d", resp.StatusCode),
+		}
+		return
+	}
 
-    // Unmarshal the response directly into a slice of posts
-    var posts []models.Post
-    if err := json.Unmarshal(body, &posts); err != nil {
-        respChan <- models.Data{
-            Success: false,
-            Message: fmt.Sprintf("Error unmarshaling response: %v", err),
-        }
-        return
-    }
+	// Unmarshal the response directly into a slice of posts
+	var posts []models.Post
+	if err := json.Unmarshal(body, &posts); err != nil {
+		respChan <- models.Data{
+			Success: false,
+			Message: fmt.Sprintf("Error unmarshaling response: %v", err),
+		}
+		return
+	}
 
-    // Successfully return the posts
-    respChan <- models.Data{
-        Success: true,
-        Posts:   posts,
-        Message: "Posts fetched successfully",
-    }
+	// Successfully return the posts
+	respChan <- models.Data{
+		Success: true,
+		Posts:   posts,
+		Message: "Posts fetched successfully",
+	}
 }

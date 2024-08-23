@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"literary-lions/backend/src/internal/models"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
+
 	"github.com/gin-gonic/gin"
-    "literary-lions/backend/src/internal/models"
 )
 
 // AddComment godoc
@@ -21,46 +23,94 @@ import (
 // @Router /api/posts [post]
 // @Security ApiKeyAuth
 // AddComment handles adding a comment to a post using Gin
+// func AddComment(c *gin.Context) {
+
+// 	// Retrieve the user ID from the context (set by middleware)
+// 	userID, exists := c.Get("userID")
+// 	if !exists {
+// 		// If the user is not authenticated, return an unauthorized error
+// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+// 		return
+// 	}
+
+// 	// Get the post ID from the URL parameter and convert it to an integer
+// 	commentIDStr := c.Param("id")
+// 	postID, err := strconv.Atoi(commentIDStr)
+// 	if err != nil {
+// 		// If the post ID is invalid, return a bad request error
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
+// 		return
+// 	}
+
+// 	// Define a structure to bind the incoming JSON request
+// 	var comment struct {
+// 		Content string `json:"content"`
+// 	}
+
+// 	// Bind the JSON request body to the comment struct
+// 	if err := c.ShouldBindJSON(&comment); err != nil {
+// 		// If the request body is invalid, return a bad request error
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+// 		return
+// 	}
+
+// 	// Call the function to create the comment in the database
+// 	if err := models.CreateComment(postID, userID.(int), comment.Content); err != nil {
+// 		// If the operation fails, return an internal server error
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		return
+// 	}
+
+// 	// Return a success message if the comment was added successfully
+// 	c.JSON(http.StatusCreated, gin.H{"message": "Comment added successfully"})
+// }
+
 func AddComment(c *gin.Context) {
 
-    // Retrieve the user ID from the context (set by middleware)
-    userID, exists := c.Get("userID")
-    if !exists {
-        // If the user is not authenticated, return an unauthorized error
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-        return
-    }
+	// Retrieve the user ID from the context (set by middleware)
+	userID, exists := c.Get("userID")
+	if !exists {
+		// If the user is not authenticated, return an unauthorized error
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
 
-    // Get the post ID from the URL parameter and convert it to an integer
-    commentIDStr := c.Param("id")
-    postID, err := strconv.Atoi(commentIDStr)
-    if err != nil {
-        // If the post ID is invalid, return a bad request error
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
-        return
-    }
+	// Get the post ID from the URL parameter and convert it to an integer
+	commentIDStr := c.Param("id")
+	postID, err := strconv.Atoi(commentIDStr)
+	if err != nil {
+		// If the post ID is invalid, return a bad request error
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
+		return
+	}
 
-    // Define a structure to bind the incoming JSON request
-    var comment struct {
-        Content string `json:"content"`
-    }
+	// Define a structure to bind the incoming JSON request
+	var comment struct {
+		Content string `json:"content"`
+	}
 
-    // Bind the JSON request body to the comment struct
-    if err := c.ShouldBindJSON(&comment); err != nil {
-        // If the request body is invalid, return a bad request error
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-        return
-    }
+	// Bind the JSON request body to the comment struct
+	if err := c.ShouldBindJSON(&comment); err != nil {
+		// If the request body is invalid, return a bad request error
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-    // Call the function to create the comment in the database
-    if err := models.CreateComment(postID, userID.(int), comment.Content); err != nil {
-        // If the operation fails, return an internal server error
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
+	// Check if the content is empty or contains only whitespace
+	if len(strings.TrimSpace(comment.Content)) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Content cannot be empty or only whitespace"})
+		return
+	}
 
-    // Return a success message if the comment was added successfully
-    c.JSON(http.StatusCreated, gin.H{"message": "Comment added successfully"})
+	// Call the function to create the comment in the database
+	if err := models.CreateComment(postID, userID.(int), comment.Content); err != nil {
+		// If the operation fails, return an internal server error
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Return a success message if the comment was added successfully
+	c.JSON(http.StatusCreated, gin.H{"message": "Comment added successfully"})
 }
 
 // CreatePost godoc
@@ -75,39 +125,80 @@ func AddComment(c *gin.Context) {
 // @Failure 401 {object} gin.H
 // @Router /api/post [post]
 // @Security ApiKeyAuth
+// func CreatePost(c *gin.Context) {
+//     // Retrieve the user ID from the context (set by middleware)
+//     userID, exists := c.Get("userID")
+//     if !exists {
+//         // If the user is not authenticated, return an unauthorized error
+//         c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+//         return
+//     }
+
+//     // Define a structure to bind the incoming JSON request
+//     var post struct {
+//         Title    string `json:"title" binding:"required"`
+//         Content  string `json:"content" binding:"required"`
+//         Category string `json:"category" binding:"required"`
+//     }
+
+//     // Bind the JSON request body to the post struct
+//     if err := c.ShouldBindJSON(&post); err != nil {
+//         // If the request body is invalid, return a bad request error
+//         c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+//         return
+//     }
+
+//     // Call the function to create the post in the database
+//     err := models.CreatePost(userID.(int), post.Title, post.Content, post.Category)
+//     if err != nil {
+//         // If the operation fails, return an internal server error
+//         c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+//         return
+//     }
+
+//     // Return a success message if the post was created successfully
+//     c.JSON(http.StatusCreated, gin.H{"message": "Post created successfully"})
+// }
+
 func CreatePost(c *gin.Context) {
-    // Retrieve the user ID from the context (set by middleware)
-    userID, exists := c.Get("userID")
-    if !exists {
-        // If the user is not authenticated, return an unauthorized error
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-        return
-    }
+	// Retrieve the user ID from the context (set by middleware)
+	userID, exists := c.Get("userID")
+	if !exists {
+		// If the user is not authenticated, return an unauthorized error
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
 
-    // Define a structure to bind the incoming JSON request
-    var post struct {
-        Title    string `json:"title" binding:"required"`
-        Content  string `json:"content" binding:"required"`
-        Category string `json:"category" binding:"required"`
-    }
+	// Define a structure to bind the incoming JSON request
+	var post struct {
+		Title    string `json:"title" binding:"required"`
+		Content  string `json:"content" binding:"required"`
+		Category string `json:"category" binding:"required"`
+	}
 
-    // Bind the JSON request body to the post struct
-    if err := c.ShouldBindJSON(&post); err != nil {
-        // If the request body is invalid, return a bad request error
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
-        return
-    }
+	// Bind the JSON request body to the post struct
+	if err := c.ShouldBindJSON(&post); err != nil {
+		// If the request body is invalid, return a bad request error
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
 
-    // Call the function to create the post in the database
-    err := models.CreatePost(userID.(int), post.Title, post.Content, post.Category)
-    if err != nil {
-        // If the operation fails, return an internal server error
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
+	// Check if the content is empty or contains only whitespace
+	if len(strings.TrimSpace(post.Content)) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Content cannot be empty or only whitespace"})
+		return
+	}
 
-    // Return a success message if the post was created successfully
-    c.JSON(http.StatusCreated, gin.H{"message": "Post created successfully"})
+	// Call the function to create the post in the database
+	err := models.CreatePost(userID.(int), post.Title, post.Content, post.Category)
+	if err != nil {
+		// If the operation fails, return an internal server error
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Return a success message if the post was created successfully
+	c.JSON(http.StatusCreated, gin.H{"message": "Post created successfully"})
 }
 
 // GetAllPosts godoc
@@ -123,14 +214,13 @@ func CreatePost(c *gin.Context) {
 // GetAllPosts handles the retrieval of all posts using Gin
 // GetAllPosts handles the retrieval of all posts with optional advanced search filters.
 func GetAllPosts(c *gin.Context) {
-    var posts []models.Post
+	var posts []models.Post
 	// Retrieve query parameters for filtering
 	title := c.Query("keyword")
 	startDate := c.Query("start_date")
 	endDate := c.Query("end_date")
 	category := c.Query("category")
-    filter := c.Query("filter")
-
+	filter := c.Query("filter")
 
 	// Parse the start and end dates if provided
 	var parsedStartDate, parsedEndDate time.Time
@@ -150,34 +240,34 @@ func GetAllPosts(c *gin.Context) {
 		}
 	}
 
-    var userID int
+	var userID int
 
-    // Handle different filters like my-posts and liked-posts
-    switch filter {
-    case "my-posts":
-        // Retrieve the user ID from the context (assuming it's set by the middleware)
-        userIDValue, exists := c.Get("userID")
-        if !exists {
-            // If the user ID is not found, return an unauthorized error
-            c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-            return
-        }
-        userID = userIDValue.(int)
-        posts, err = models.GetUserPosts(userID)
-    case "liked-posts":
-        // Retrieve the user ID from the context (assuming it's set by the middleware)
-        userIDValue, exists := c.Get("userID")
-        if !exists {
-            // If the user ID is not found, return an unauthorized error
-            c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-            return
-        }
-        userID = userIDValue.(int)
-        posts, err = models.GetLikedPostsByUserID(userID)
-    default:
-        // Implement function to handle combined search/filter logic
-        posts, err = models.GetFilteredPosts(category, title, parsedStartDate, parsedEndDate)
-    }
+	// Handle different filters like my-posts and liked-posts
+	switch filter {
+	case "my-posts":
+		// Retrieve the user ID from the context (assuming it's set by the middleware)
+		userIDValue, exists := c.Get("userID")
+		if !exists {
+			// If the user ID is not found, return an unauthorized error
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			return
+		}
+		userID = userIDValue.(int)
+		posts, err = models.GetUserPosts(userID)
+	case "liked-posts":
+		// Retrieve the user ID from the context (assuming it's set by the middleware)
+		userIDValue, exists := c.Get("userID")
+		if !exists {
+			// If the user ID is not found, return an unauthorized error
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			return
+		}
+		userID = userIDValue.(int)
+		posts, err = models.GetLikedPostsByUserID(userID)
+	default:
+		// Implement function to handle combined search/filter logic
+		posts, err = models.GetFilteredPosts(category, title, parsedStartDate, parsedEndDate)
+	}
 
 	// // Call the function to get all posts from the database with the provided filters
 	// posts, err := models.GetFilteredPosts(category, title, parsedStartDate, parsedEndDate)
@@ -204,59 +294,59 @@ func GetAllPosts(c *gin.Context) {
 // @Router /api/post/{id} [get]
 // GetPostByID handles the retrieval of a single post by ID using Gin
 func GetPostByID(c *gin.Context) {
-    // Get the post ID from the URL parameter and convert it to an integer
-    postIDStr := c.Param("id")
-    postID, err := strconv.Atoi(postIDStr)
-    if err != nil {
-        // If the post ID is invalid, return a bad request error
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
-        return
-    }
+	// Get the post ID from the URL parameter and convert it to an integer
+	postIDStr := c.Param("id")
+	postID, err := strconv.Atoi(postIDStr)
+	if err != nil {
+		// If the post ID is invalid, return a bad request error
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
+		return
+	}
 
-    // Call the function to get the post by ID from the database
-    post, err := models.GetPostByID(postID)
-    if err != nil {
-        // If the operation fails, return an internal server error
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
+	// Call the function to get the post by ID from the database
+	post, err := models.GetPostByID(postID)
+	if err != nil {
+		// If the operation fails, return an internal server error
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-    // Call the function to get comments associated with the post
-    comments, err := models.GetCommentsByPostID(postID)
-    if err != nil {
-        // If the operation fails, return an internal server error
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
+	// Call the function to get comments associated with the post
+	comments, err := models.GetCommentsByPostID(postID)
+	if err != nil {
+		// If the operation fails, return an internal server error
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-    // Call the functions to count likes and dislikes for the post
-    likes, err := models.CountPostLikes(postID)
-    if err != nil {
-        // If the operation fails, return an internal server error
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
+	// Call the functions to count likes and dislikes for the post
+	likes, err := models.CountPostLikes(postID)
+	if err != nil {
+		// If the operation fails, return an internal server error
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-    dislikes, err := models.CountPostDislikes(postID)
-    if err != nil {
-        // If the operation fails, return an internal server error
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
+	dislikes, err := models.CountPostDislikes(postID)
+	if err != nil {
+		// If the operation fails, return an internal server error
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-    // Prepare the response with the post, comments, likes, and dislikes
-    response := struct {
-        Post     models.Post     `json:"post"`
-        Comments []models.Comment `json:"comments"`
-        Likes    int              `json:"likes"`
-        Dislikes int              `json:"dislikes"`
-    }{
-        Post:     post,
-        Comments: comments,
-        Likes:    likes,
-        Dislikes: dislikes,
-    }
+	// Prepare the response with the post, comments, likes, and dislikes
+	response := struct {
+		Post     models.Post      `json:"post"`
+		Comments []models.Comment `json:"comments"`
+		Likes    int              `json:"likes"`
+		Dislikes int              `json:"dislikes"`
+	}{
+		Post:     post,
+		Comments: comments,
+		Likes:    likes,
+		Dislikes: dislikes,
+	}
 
-    // Return the response as a JSON object
-    c.JSON(http.StatusOK, response)
+	// Return the response as a JSON object
+	c.JSON(http.StatusOK, response)
 }

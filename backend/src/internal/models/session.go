@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -51,20 +52,20 @@ func InvalidateSession(sessionUUID string) error {
 // Returns:
 //   - string: The generated session UUID if successful.
 //   - error: An error if UUID generation or insertion fails; otherwise, nil.
+
 func CreateSession(userID int) (string, error) {
-	// Generate a new session UUID
 	sessionUUID, err := generateSessionUUID()
 	if err != nil {
-		return "", err // Return an empty string and the error if UUID generation fails
+		log.Printf("Error generating session UUID: %v", err)
+		return "", err
 	}
 
-	// Define the expiration time for the session (24 hours from now)
 	expiresAt := time.Now().Add(24 * time.Hour)
 
-	// Insert the new session into the database
 	_, err = db.Exec("INSERT INTO sessions (user_id, uuid, expires_at) VALUES (?, ?, ?)", userID, sessionUUID, expiresAt)
 	if err != nil {
-		return "", err // Return an empty string and the error if insertion fails
+		log.Printf("Error inserting session into database: %v", err)
+		return "", err
 	}
 
 	return sessionUUID, nil // Return the generated UUID and no error if insertion is successful

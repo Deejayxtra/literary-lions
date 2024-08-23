@@ -7,6 +7,7 @@ import (
 	"literary-lions/backend/src/internal/db"
 	"literary-lions/backend/src/internal/handlers"
 	"literary-lions/backend/src/internal/middleware"
+	"literary-lions/backend/src/internal/models"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -32,6 +33,9 @@ func main() {
 	}
 	defer database.Close()
 
+	// Set the database for the models package
+	models.SetDatabase(database)
+
 	// Initialize handlers with the database connection
 	handlers.InitHandlers(database)
 
@@ -43,32 +47,32 @@ func main() {
 
 	// Serve Swagger UI
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-    // Slice to store routes
-    var routes []string
+	// Slice to store routes
+	var routes []string
 
 	note := "<h4>Only the GET endpoints will display, the POST endpoints will give Page not found as there is no payload to send</h4>"
-    // Root route with clickable links
-    r.GET("/", func(c *gin.Context) {
-        routeList := note + "<h1>Available Endpoints:</h1><ul>"
-        for _, route := range routes {
-            routeList += fmt.Sprintf(`<li><a href="%s">%s</a></li>`, route, route)
-        }
-        routeList += "</ul>"
-        c.Header("Content-Type", "text/html")
-        c.String(200, routeList)
-    })
+	// Root route with clickable links
+	r.GET("/", func(c *gin.Context) {
+		routeList := note + "<h1>Available Endpoints:</h1><ul>"
+		for _, route := range routes {
+			routeList += fmt.Sprintf(`<li><a href="%s">%s</a></li>`, route, route)
+		}
+		routeList += "</ul>"
+		c.Header("Content-Type", "text/html")
+		c.String(200, routeList)
+	})
 
-    // Function to add routes to the list and define them
-    addRoute := func(method, path string, handler gin.HandlerFunc) {
-        routes = append(routes, path)
-        r.Handle(method, path, handler)
-    }
+	// Function to add routes to the list and define them
+	addRoute := func(method, path string, handler gin.HandlerFunc) {
+		routes = append(routes, path)
+		r.Handle(method, path, handler)
+	}
 
-    // Define some example routes
+	// Define some example routes
 	addRoute("POST", "/login", handlers.Login)
 	addRoute("POST", "/logout", handlers.Logout)
 	addRoute("POST", "/register", handlers.Register)
-    addRoute("GET", "/posts", handlers.GetAllPosts)
+	addRoute("GET", "/posts", handlers.GetAllPosts)
 
 	api := r.Group("/api/v1.0")
 
@@ -77,7 +81,6 @@ func main() {
 	api.POST("/login", handlers.Login)
 	api.POST("/logout", handlers.Logout)
 	api.GET("/posts", handlers.GetAllPosts)
-
 
 	api.GET("/post/:id", handlers.GetPostByID) // Get a specific post by ID
 
@@ -99,7 +102,7 @@ func main() {
 	}
 
 	{
-		api.GET("/filtered-posts", handlers.GetAllPosts)		   // This is the endpoint to be called when filter query is set
+		api.GET("/filtered-posts", handlers.GetAllPosts)           // This is the endpoint to be called when filter query is set
 		api.GET("/users", handlers.GetAllUsers)                    // Apply middleware based on role in the function
 		api.POST("/post", handlers.CreatePost)                     // Create a new post
 		api.PUT("/post/:id", handlers.UpdatePost)                  // Update a specific post by ID
@@ -110,7 +113,6 @@ func main() {
 		// Likes and dislikes for posts
 		api.POST("/post/:id/like", handlers.LikePost)       // Like a specific post by ID
 		api.POST("/post/:id/dislike", handlers.DislikePost) // Dislike a specific post by ID
-
 
 		// // Likes and dislikes for comments
 		api.POST("/comment/:id/like", handlers.LikeComment)       // Like a specific comment by ID

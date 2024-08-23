@@ -8,12 +8,12 @@ import (
 )
 
 type Post struct {
-	ID        int		`json:"id"`
-	UserID    int		`json:"user_id"`
-	Title     string	`json:"title"`
-	Content   string	`json:"content"`
-	Username  string	`json:"username"`
-	Category  string	`json:"category"`
+	ID        int       `json:"id"`
+	UserID    int       `json:"user_id"`
+	Title     string    `json:"title"`
+	Content   string    `json:"content"`
+	Username  string    `json:"username"`
+	Category  string    `json:"category"`
 	CreatedAt time.Time `json:"created_at" db:"createdAt"`
 }
 
@@ -98,6 +98,7 @@ func GetAllPosts(db *sql.DB, keyword string) ([]Post, error) {
 
 	return posts, nil
 }
+
 // GetPostByID retrieves a specific post by its ID from the database.
 // Parameters:
 //   - postID: The ID of the post to retrieve.
@@ -117,12 +118,12 @@ func GetPostByID(postID int) (Post, error) {
 		return Post{}, err
 	}
 	// Fetch the username for the post's author
-	user, err := GetUser(post.UserID) 
+	user, err := GetUser(post.UserID)
 	if err != nil {
 		return Post{}, err
 	}
 	post.Username = user.Username
-	
+
 	return post, nil
 }
 
@@ -176,11 +177,11 @@ func GetFilteredPosts(category, title string, startDate, endDate time.Time) ([]P
 		}
 
 		// Fetch the username for each post based on the user ID
-        user, err := GetUser(post.UserID)
-        if err != nil {
-            return nil, err
-        }
-        post.Username = user.Username
+		user, err := GetUser(post.UserID)
+		if err != nil {
+			return nil, err
+		}
+		post.Username = user.Username
 
 		posts = append(posts, post)
 	}
@@ -223,8 +224,8 @@ func GetUserPosts(userID int) ([]Post, error) {
 }
 
 func GetLikedPostsByUserID(userID int) ([]Post, error) {
-    // SQL query to select liked posts along with the username
-    query := `
+	// SQL query to select liked posts along with the username
+	query := `
         SELECT p.id, p.title, p.content, p.category, p.user_id, p.created_at, u.username 
         FROM posts p
         INNER JOIN post_likes pl ON p.id = pl.post_id
@@ -232,30 +233,30 @@ func GetLikedPostsByUserID(userID int) ([]Post, error) {
         WHERE pl.user_id = ? AND pl.is_like = 1
     `
 
-    // Execute the query
-    rows, err := db.Query(query, userID)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	// Execute the query
+	rows, err := db.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-    // Slice to hold the result
-    var likedPosts []Post
+	// Slice to hold the result
+	var likedPosts []Post
 
-    // Iterate over the rows
-    for rows.Next() {
-        var post Post
-        // Assuming Post struct has a Username field
-        if err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.Category, &post.UserID, &post.CreatedAt, &post.Username); err != nil {
-            return nil, err
-        }
-        likedPosts = append(likedPosts, post)
-    }
+	// Iterate over the rows
+	for rows.Next() {
+		var post Post
+		// Assuming Post struct has a Username field
+		if err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.Category, &post.UserID, &post.CreatedAt, &post.Username); err != nil {
+			return nil, err
+		}
+		likedPosts = append(likedPosts, post)
+	}
 
-    // Check for any errors encountered during iteration
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
+	// Check for any errors encountered during iteration
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
-    return likedPosts, nil
+	return likedPosts, nil
 }
