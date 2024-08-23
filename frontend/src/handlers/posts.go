@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 	"unicode/utf8"
 )
 
@@ -35,6 +36,33 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 
 	var filterIsSet bool
 	var cookie *http.Cookie
+
+	log.Print("StartDate: ", startDate)
+	log.Print("EndDate: ", endDate)
+    // Validate date range
+    if startDate != "" && endDate != "" {
+        start, err := time.Parse("2006-01-02", startDate)
+        if err != nil {
+            // renderErrorMessage(w, "Invalid start date format. Please use YYYY-MM-DD.")
+			message := "Invalid start date format. Please use YYYY-MM-DD."
+			DateErrorNotification(w, r, message)
+            return
+        }
+        end, err := time.Parse("2006-01-02", endDate)
+        if err != nil {
+            // renderErrorMessage(w, "Invalid end date format. Please use YYYY-MM-DD.")
+			message := "Invalid end date format. Please use YYYY-MM-DD."
+			DateErrorNotification(w, r, message)
+            return
+        }
+
+        if end.Before(start) {
+            // renderErrorMessage(w, "End date cannot be before the start date.")
+			message := "End date cannot be before the start date."
+			DateErrorNotification(w, r, message)
+            return
+        }
+    }
 
 	// Construct the API request URL with query parameters
 	apiURL := config.BaseApi + "/posts?"
@@ -103,6 +131,7 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 			Username      string
 			NoPostsFound  bool
 			SearchMessage string
+			DateError     bool
 		}{
 			Posts:         posts,
 			Authenticated: authenticated,
@@ -110,6 +139,7 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 			Username:      currentUser,
 			NoPostsFound:  true,
 			SearchMessage: "No posts found for the selected criteria.",
+			DateError:		false,
 		}
 
 		RenderTemplate(w, "index.html", data)
@@ -131,12 +161,14 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 		Categories    []string
 		Username      string
 		NoPostsFound  bool
+		Error         bool
 	}{
 		Posts:         posts,
 		Authenticated: authenticated,
 		Categories:    categories,
 		Username:      currentUser,
 		NoPostsFound:  false,
+		Error:		   false,
 	}
 
 	RenderTemplate(w, "index.html", data)

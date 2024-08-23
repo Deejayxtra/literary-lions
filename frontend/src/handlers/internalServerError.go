@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"html/template"
+	"literary-lions/frontend/src/config"
 	"literary-lions/frontend/src/models"
 	"log"
 	"net/http"
@@ -77,3 +78,82 @@ func UnauthorizedErrorNotification(w http.ResponseWriter, r *http.Request, postI
 
 	}
 }
+
+
+func DateErrorNotification(w http.ResponseWriter, r *http.Request, message string) {
+	respChan := make(chan models.Data, 1)
+	var wg sync.WaitGroup
+	apiURL := config.BaseApi + "/posts?"
+	
+	wg.Add(1)
+	go func() {
+		SendShowPostsRequest(apiURL, respChan)
+	}()
+
+	go func() {
+		wg.Wait()
+		close(respChan)
+	}()
+
+	currentUser, authenticated := isAuthenticated(r)
+	response := <-respChan
+	
+	if !response.Success {
+		handleErrorResponse(w, response)
+		return
+	}
+
+	posts := response.Posts
+
+	// Handle no posts found
+	if len(posts) == 0 {
+		currentUser, authenticated := isAuthenticated(r)
+		data := struct {
+			Posts         []models.Post
+			Authenticated bool
+			Categories    []string
+			Username      string
+			NoPostsFound  bool
+			SearchMessage string
+			DateError     bool
+		}{
+			Posts:         posts,
+			Authenticated: authenticated,
+			Categories:    []string{"Random", "News", "Sport", "Technology", "Science", "Health"},
+			Username:      currentUser,
+			NoPostsFound:  true,
+			SearchMessage: "No posts found for the selected criteria.",
+			DateError:	   false,
+		}
+
+		RenderTemplate(w, "index.html", data)
+		return
+	}
+
+	// Truncate content if necessary
+	for i := range posts {
+		posts[i].Content = truncateContent(posts[i].Content, 150)
+	}
+
+	categories := []string{"Random", "News", "Sport", "Technology", "Science", "Health"}
+
+	data := struct {
+		Posts         []models.Post
+		Authenticated bool
+		Categories    []string
+		Username      string
+		NoPostsFound  bool
+		Error         string
+	}{
+		Posts:         posts,
+		Authenticated: authenticated,
+		Categories:    categories,
+		Username:      currentUser,
+		NoPostsFound:  false,
+		Error:         message,
+	}
+
+	RenderTemplate(w, "index.html", data)
+}
+
+
