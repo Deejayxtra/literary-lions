@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"literary-lions/frontend/src/config"
 	"literary-lions/frontend/src/models"
@@ -56,20 +55,12 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "post?id="+postID, http.StatusSeeOther)
 		} else if responseDetails.Status == http.StatusUnauthorized {
 			// responseDetails.Status = http.StatusUnauthorized
-			responseDetails.Message = `You are not authorized! Please <a href="/login">login</a> before adding comment.`
-			tmpl := template.Must(template.ParseFiles("templates/post.html"))
-			// tmpl := template.Must(template.ParseFiles("literary-lions/frontend/src/templates/post.html"))
-			tmpl.Execute(w, map[string]interface{}{
-				"Error": template.HTML(responseDetails.Message),
-			})
+			message := `You are not authorized! Please <a href="/login">login</a> before adding comment.`
+			UnauthorizedErrorNotification(w, r, postID, message)
 		} else {
 			// responseDetails.Status = resp.StatusCode
-			responseDetails.Message = "Oops! Something went wrong. Failed to add comment."
-			tmpl := template.Must(template.ParseFiles("templates/post.html"))
-			// tmpl := template.Must(template.ParseFiles("literary-lions/frontend/src/templates/post.html"))
-			tmpl.Execute(w, map[string]interface{}{
-				"Error": responseDetails.Message,
-			})
+			message := "Oops! Something went wrong. Failed to add comment."
+			UnauthorizedErrorNotification(w, r, postID, message)
 		}
 	}
 }

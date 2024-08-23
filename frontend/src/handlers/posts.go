@@ -37,8 +37,6 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 	var filterIsSet bool
 	var cookie *http.Cookie
 
-	log.Print("StartDate: ", startDate)
-	log.Print("EndDate: ", endDate)
     // Validate date range
     if startDate != "" && endDate != "" {
         start, err := time.Parse("2006-01-02", startDate)
